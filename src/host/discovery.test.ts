@@ -1,4 +1,4 @@
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -27,6 +27,7 @@ describe("isSocketListening", () => {
     const path = join(dir, "gui.sock");
     await writeFile(path, "");
     expect(await isSocketListening(path)).toBe(false);
+    await unlink(path);
 
     const server = createServer();
     await new Promise<void>((resolve, reject) => {

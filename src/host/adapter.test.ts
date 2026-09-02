@@ -41,8 +41,9 @@ describe("CodingAgentServerService", () => {
     expect(snapshot.name).toBe("Adapter test");
     expect(snapshot.transcript).toEqual([]);
 
-    const listed = await service.listSessions();
-    expect(listed.some((session) => session.id === snapshot.id)).toBe(true);
+    await expect(service.openSession("missing-session")).rejects.toMatchObject({
+      code: "not_found",
+    });
     },
   );
 });

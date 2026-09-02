@@ -1,3 +1,4 @@
+import { join, resolve } from "node:path";
 import type { AgentSession, AgentSessionEvent } from "@earendil-works/pi-coding-agent";
 import {
   createAgentSession,
@@ -39,6 +40,12 @@ import type {
   TranscriptItem,
   TranscriptProgress,
 } from "@earendil-works/pi-protocol";
+
+function sessionDirFor(cwd: string, agentDir: string): string {
+  const resolvedCwd = resolve(cwd);
+  const encoded = `--${resolvedCwd.replace(/^[/\\]/, "").replace(/[/\\:]/g, "-")}--`;
+  return join(agentDir, "sessions", encoded);
+}
 
 function messageId(sessionId: string, index: number, role: string, timestamp: number): string {
   return `${sessionId}:${index}:${role}:${timestamp}`;
@@ -278,14 +285,18 @@ export class CodingAgentServerService implements PiServerService {
   static async create(options: { cwd: string; agentDir?: string }): Promise<CodingAgentServerService> {
     const agentDir = options.agentDir ?? getAgentDir();
     const modelRuntime = await ModelRuntime.create({
-      authPath: `${agentDir}/auth.json`,
-      modelsPath: `${agentDir}/models.json`,
+      authPath: join(agentDir, "auth.json"),
+      modelsPath: join(agentDir, "models.json"),
     });
     return new CodingAgentServerService(options.cwd, agentDir, modelRuntime);
   }
 
+  private sessionDir(cwd = this.cwd): string {
+    return sessionDirFor(cwd, this.agentDir);
+  }
+
   async listSessions(): Promise<SessionMetadata[]> {
-    const sessions = await SessionManager.list(this.cwd);
+    const sessions = await SessionManager.list(this.cwd, this.sessionDir());
     return sessions.map((session) => ({
       id: session.id,
       createdAt: session.created.getTime(),
@@ -305,15 +316,19 @@ export class CodingAgentServerService implements PiServerService {
 
   async createSession(options: CreateSessionOptions): Promise<PiSessionRuntime> {
     const cwd = options.cwd?.trim() || this.cwd;
-    const sessionManager = SessionManager.create(cwd, undefined, { id: options.id });
+    const sessionManager = SessionManager.create(cwd, this.sessionDir(cwd), { id: options.id });
     return this.openWithManager(options.id, cwd, sessionManager, options);
   }
 
   async openSession(sessionId: string): Promise<PiSessionRuntime> {
-    const sessions = await SessionManager.list(this.cwd);
+    const sessions = await SessionManager.list(this.cwd, this.sessionDir());
     const info = sessions.find((session) => session.id === sessionId);
     if (!info) throw new SessionNotFoundError(`Unknown session: ${sessionId}`);
-    const sessionManager = SessionManager.open(info.path, undefined, this.cwd);
+    const sessionManager = SessionManager.open(
+      info.path,
+      this.sessionDir(info.cwd || this.cwd),
+      info.cwd || this.cwd,
+    );
     return this.openWithManager(sessionId, info.cwd || this.cwd, sessionManager);
   }
 
