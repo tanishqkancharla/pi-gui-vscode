@@ -9,9 +9,17 @@ If you already use the Pi CLI, the sidebar shares `~/.pi/agent` (auth, models, s
 ## Requirements
 
 - VS Code 1.96 or later
-- Node.js 22.19 or later (for local development)
+- Node.js 24 or later to run the `pi` CLI (`/login` uses undici, which needs `zlib.createZstdDecompress`). Node 22.19+ is enough to *build* the extension.
 
 Auth still comes from Pi’s normal places: `~/.pi/agent/auth.json`, `models.json`, and environment keys such as `ANTHROPIC_API_KEY`. Missing credentials show an in-sidebar error, not an “install the CLI” prompt.
+
+To log in with the CLI (same files the sidebar reads):
+
+```bash
+pi          # then /login in the TUI
+```
+
+If the sidebar was already open, reload the VS Code window afterward.
 
 ## Develop
 
