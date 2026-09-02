@@ -1,0 +1,637 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --foreground: var(--vscode-foreground, light-dark(#3b3b3b, #cccccc));
+  --description-foreground: var(
+    --vscode-descriptionForeground,
+    light-dark(#3b3b3b, #9d9d9d)
+  );
+  --error-foreground: var(--vscode-errorForeground, oklch(0.65 0.18 25));
+  --focus-border: var(--vscode-focusBorder, light-dark(#005fb8, #0078d4));
+  --sidebar-background: var(
+    --vscode-sideBar-background,
+    light-dark(#f8f8f8, #181818)
+  );
+  --editor-background: var(
+    --vscode-editor-background,
+    light-dark(#ffffff, #1e1e1e)
+  );
+  --input-foreground: var(
+    --vscode-input-foreground,
+    light-dark(#3b3b3b, #cccccc)
+  );
+  --input-border: var(
+    --vscode-editorWidget-border,
+    light-dark(#c8c8c8, #454545)
+  );
+  --input-placeholder-foreground: var(
+    --vscode-input-placeholderForeground,
+    light-dark(#767676, #989898)
+  );
+  --input-validation-error-background: var(
+    --vscode-inputValidation-errorBackground,
+    light-dark(#f2dede, #5a1d1d)
+  );
+  --input-validation-error-border: var(
+    --vscode-inputValidation-errorBorder,
+    #be1100
+  );
+  --button-secondary-background: var(
+    --vscode-button-secondaryBackground,
+    light-dark(#e5e5e5, #313131)
+  );
+  --button-secondary-foreground: var(
+    --vscode-button-secondaryForeground,
+    light-dark(#3b3b3b, #cccccc)
+  );
+  --button-secondary-hover-background: var(
+    --vscode-button-secondaryHoverBackground,
+    light-dark(#cccccc, #3c3c3c)
+  );
+  --panel-border: var(--vscode-panel-border, light-dark(#e5e5e5, #2b2b2b));
+  --text-link-foreground: var(
+    --vscode-textLink-foreground,
+    light-dark(#005fb8, #4daafc)
+  );
+  --text-link-active-foreground: var(
+    --vscode-textLink-activeForeground,
+    light-dark(#005fb8, #4daafc)
+  );
+  --text-code-block-background: var(
+    --vscode-textCodeBlock-background,
+    light-dark(#f8f8f8, #2b2b2b)
+  );
+  --editor-font-family: var(
+    --vscode-editor-font-family,
+    "SF Mono",
+    Monaco,
+    "Cascadia Code",
+    "Roboto Mono",
+    Consolas,
+    "Courier New",
+    monospace
+  );
+  --git-added-foreground: var(
+    --vscode-gitDecoration-addedResourceForeground,
+    light-dark(#587c0c, #89d185)
+  );
+  --git-deleted-foreground: var(
+    --vscode-gitDecoration-deletedResourceForeground,
+    light-dark(#ad0707, #f48771)
+  );
+  --scrollbar-slider-background: var(
+    --vscode-scrollbarSlider-background,
+    rgba(121, 121, 121, 0.4)
+  );
+  --scrollbar-slider-hover-background: var(
+    --vscode-scrollbarSlider-hoverBackground,
+    rgba(100, 100, 100, 0.7)
+  );
+  --scrollbar-slider-active-background: var(
+    --vscode-scrollbarSlider-activeBackground,
+    rgba(191, 191, 191, 0.4)
+  );
+  --card-background: oklch(from var(--sidebar-background) calc(l * 0.98) c h);
+  --font-family: var(
+    --vscode-font-family,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif
+  );
+  --font-size: var(--vscode-font-size, 13px);
+  --spacing-xs: 4px;
+  --spacing-sm: 6px;
+  --spacing-md: 8px;
+  --font-size-base: var(--font-size);
+  --font-size-small: calc(var(--font-size) - 1px);
+  --input-background: var(--editor-background);
+  --input-background-muted: var(--card-background);
+  --hover-background: var(--card-background);
+  --border-color: var(
+    --input-border,
+    color-mix(in srgb, var(--foreground) 20%, var(--sidebar-background))
+  );
+  --border-color-muted: color-mix(
+    in oklab,
+    var(--border-color) 80%,
+    var(--sidebar-background)
+  );
+  --focus-border-color: var(--focus-border);
+  --padding-button: var(--spacing-xs) var(--spacing-md);
+  --padding-button-compact: var(--spacing-xs) var(--spacing-sm);
+  --shadow-subtle:
+    rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px,
+    light-dark(rgba(38, 36, 42, 0.06), rgba(227, 226, 229, 0.06)) 0px 0px 0px 1px,
+    light-dark(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.12)) 0px 1px 1px -0.5px,
+    light-dark(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.12)) 0px 3px 3px -1.5px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  padding: 0;
+  color: var(--foreground);
+  background-color: var(--sidebar-background);
+  font-family: var(--font-family);
+  font-size: var(--font-size);
+  overflow: hidden;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--sidebar-background);
+  border-bottom: 1px solid var(--panel-border);
+  flex-shrink: 0;
+}
+
+.session-switcher {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.session-switcher-button {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+  padding: var(--padding-button-compact);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--input-background-muted);
+  color: color-mix(in oklab, var(--foreground) 80%, var(--sidebar-background));
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  user-select: none;
+}
+
+.session-switcher-button:hover,
+.session-switcher-button.active {
+  background-color: var(--hover-background);
+  color: var(--foreground);
+}
+
+.session-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-bottom: 1px;
+  font-size: var(--font-size-small);
+  font-weight: 500;
+  border-left: 2px solid transparent;
+}
+
+.dropdown-arrow {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-left: var(--spacing-md);
+  flex-shrink: 0;
+}
+
+.session-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+  background: var(--input-background);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-shadow: var(--shadow-subtle);
+  z-index: 1000;
+}
+
+.session-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: var(--spacing-md);
+  cursor: pointer;
+  border: none;
+  border-bottom: 1px solid var(--border-color-muted);
+  border-left: 2px solid transparent;
+  background: transparent;
+  color: color-mix(in oklab, var(--foreground) 80%, var(--input-background));
+  text-align: left;
+}
+
+.session-item:last-child {
+  border-bottom: none;
+}
+
+.session-item:hover {
+  background-color: var(--hover-background);
+  color: var(--foreground);
+}
+
+.session-item.current {
+  color: var(--focus-border);
+}
+
+.session-item-title {
+  font-size: var(--font-size-small);
+  font-weight: 500;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  color: var(--description-foreground);
+  font-size: var(--font-size-small);
+}
+
+.new-session-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--input-foreground);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.new-session-button:hover {
+  background-color: var(--hover-background);
+  opacity: 1;
+}
+
+.status-banner {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--border-color-muted);
+  color: var(--description-foreground);
+  font-size: var(--font-size-small);
+  background: var(--input-background-muted);
+}
+
+.status-banner.error {
+  background-color: var(--input-validation-error-background);
+  border-bottom-color: var(--input-validation-error-border);
+  color: var(--error-foreground);
+}
+
+.messages-container {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--spacing-md);
+  overscroll-behavior: contain;
+}
+
+.messages-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty-state {
+  margin: auto;
+  text-align: center;
+  color: var(--description-foreground);
+  max-width: 28ch;
+  line-height: 1.45;
+  padding: 48px 12px;
+}
+
+.message--user .message-content {
+  width: 100%;
+  padding: var(--padding-button);
+  background-color: var(--input-background);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--description-foreground);
+  line-height: 20px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.message--assistant .message-content {
+  background: transparent;
+  color: var(--foreground);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.markdown :where(p, ul, ol, pre, blockquote) {
+  margin: 0 0 8px;
+}
+
+.markdown :where(p, ul, ol, pre, blockquote):last-child {
+  margin-bottom: 0;
+}
+
+.markdown a {
+  color: var(--text-link-foreground);
+}
+
+.markdown code,
+.message-content code {
+  font-family: var(--editor-font-family);
+  background-color: var(--text-code-block-background);
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  padding: 0 3px;
+  font-size: 12px;
+}
+
+.markdown pre {
+  background: var(--text-code-block-background);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 8px;
+  overflow-x: auto;
+}
+
+.markdown pre code {
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.thinking-block {
+  color: var(--description-foreground);
+  font-style: italic;
+  border-left: 2px solid var(--border-color);
+  padding: 4px 8px;
+  white-space: pre-wrap;
+}
+
+.tool-card {
+  border: 1px solid var(--border-color-muted);
+  border-radius: 4px;
+  background-color: var(--input-background-muted);
+  overflow: hidden;
+  font-size: var(--font-size-base);
+}
+
+.tool-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+}
+
+.tool-card__name {
+  font-weight: 600;
+}
+
+.tool-card__status {
+  margin-left: auto;
+  font-size: var(--font-size-small);
+  color: var(--description-foreground);
+}
+
+.tool-card__summary,
+.tool-card__path {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--text-link-foreground);
+  font-family: var(--editor-font-family);
+  font-size: 12px;
+  padding: 0 var(--spacing-sm) var(--spacing-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tool-card__summary {
+  color: var(--description-foreground);
+  cursor: default;
+}
+
+.tool-card__output {
+  margin: 0;
+  padding: var(--spacing-md);
+  border-top: 1px solid var(--border-color-muted);
+  background: var(--text-code-block-background);
+  font-family: var(--editor-font-family);
+  font-size: var(--font-size-small);
+  white-space: pre-wrap;
+  max-height: 160px;
+  overflow: auto;
+}
+
+.input-bar-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin: var(--spacing-md);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.queued-messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.queued-message {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color-muted);
+  border-radius: 4px;
+}
+
+.queued-message__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-small);
+  color: var(--description-foreground);
+}
+
+.input-container {
+  padding: var(--spacing-sm);
+  background-color: var(--input-background);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  position: relative;
+}
+
+.input-container:focus-within {
+  border-color: var(--focus-border-color);
+}
+
+.prompt-input {
+  width: 100%;
+  min-height: 36px;
+  max-height: 120px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--input-foreground);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  line-height: 20px;
+  resize: none;
+  outline: none;
+}
+
+.prompt-input::placeholder {
+  color: var(--input-placeholder-foreground);
+}
+
+.input-divider {
+  height: 1px;
+  background-color: var(--border-color);
+}
+
+.input-buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.picker {
+  max-width: 42%;
+  min-width: 0;
+  background: transparent;
+  color: var(--foreground);
+  border: none;
+  font-size: var(--font-size-small);
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+.picker:hover,
+.picker:focus {
+  opacity: 1;
+}
+
+.shortcut-button {
+  padding: 4px 6px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--input-foreground);
+  font-size: var(--font-size-small);
+  cursor: pointer;
+  opacity: 0.5;
+}
+
+.shortcut-button:hover {
+  opacity: 1;
+  background-color: var(--hover-background);
+}
+
+.shortcut-button--secondary,
+.shortcut-button--stop {
+  background-color: var(--button-secondary-background);
+  color: var(--button-secondary-foreground);
+  opacity: 0.8;
+}
+
+.shortcut-button--secondary:hover,
+.shortcut-button--stop:hover {
+  opacity: 1;
+  background-color: var(--button-secondary-hover-background);
+}
+
+.mention-dropdown {
+  position: absolute;
+  left: var(--spacing-sm);
+  right: var(--spacing-sm);
+  bottom: 100%;
+  margin-bottom: 4px;
+  max-height: 160px;
+  overflow-y: auto;
+  background: var(--input-background);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-shadow: var(--shadow-subtle);
+  z-index: 20;
+}
+
+.mention-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-bottom: 1px solid var(--border-color-muted);
+  background: transparent;
+  color: var(--foreground);
+  padding: 6px 8px;
+  cursor: pointer;
+  font-family: var(--editor-font-family);
+  font-size: 12px;
+}
+
+.mention-item:last-child {
+  border-bottom: none;
+}
+
+.mention-item:hover {
+  background-color: var(--hover-background);
+}
+
+.messages-container::-webkit-scrollbar {
+  width: 10px;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-slider-background);
+  border-radius: 5px;
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-slider-hover-background);
+}
+
+.messages-container::-webkit-scrollbar-thumb:active {
+  background: var(--scrollbar-slider-active-background);
+}

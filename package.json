@@ -1,0 +1,108 @@
+{
+  "name": "pi-gui",
+  "displayName": "Pi GUI",
+  "description": "Pi coding agent sidebar for VS Code. Same chrome as OpenCode GUI, dumb PiClient.",
+  "version": "0.1.0",
+  "publisher": "pi-gui",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "vscode": "^1.96.0",
+    "node": ">=22.19.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "piGui",
+          "title": "Pi",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "piGui": [
+        {
+          "type": "webview",
+          "id": "piGui.chatView",
+          "name": "Pi"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "piGui.addSelectionToPrompt",
+        "title": "Add Selection to Prompt",
+        "category": "Pi GUI"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "piGui.addSelectionToPrompt",
+          "when": "editorTextFocus",
+          "group": "navigation@9"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Pi GUI",
+      "properties": {
+        "piGui.serverSocket": {
+          "type": "string",
+          "default": "",
+          "description": "Unix socket path for an existing PiServer. Empty uses ~/.pi/agent/gui.sock and auto-starts a bundled server if nothing is listening."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm build",
+    "build": "pnpm build:extension && pnpm build:webview",
+    "build:extension": "vite build --config vite.config.extension.ts",
+    "build:webview": "vite build --config vite.config.ts",
+    "watch": "concurrently -n ext,web \"pnpm watch:extension\" \"pnpm watch:webview\"",
+    "watch:extension": "vite build --config vite.config.extension.ts --watch --mode development",
+    "watch:webview": "vite build --config vite.config.ts --watch --mode development",
+    "dev:webview": "vite --config vite.config.ts --port 43118 --strictPort --host 127.0.0.1",
+    "spec": "tkstack specs/pi-gui.md --port 43117 --root .",
+    "test": "vitest run",
+    "clean": "rm -rf dist out",
+    "package": "vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "@earendil-works/pi-ai": "^0.84.4",
+    "@earendil-works/pi-client": "^0.84.4",
+    "@earendil-works/pi-coding-agent": "^0.84.4",
+    "@earendil-works/pi-protocol": "^0.84.4",
+    "@earendil-works/pi-server": "^0.84.4",
+    "marked": "^15.0.12",
+    "solid-js": "^1.9.9",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "@types/vscode": "^1.96.0",
+    "@vscode/vsce": "^3.3.2",
+    "concurrently": "^9.1.2",
+    "tkstack": "^0.1.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vite-plugin-solid": "^2.11.6",
+    "vitest": "^3.1.4"
+  },
+  "packageManager": "pnpm@10.13.1",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "protobufjs"
+    ]
+  }
+}
