@@ -132,6 +132,7 @@ export function App() {
         sessions={pickerSessions()}
         currentId={snapshot()?.id}
         currentTitle={title()}
+        busyId={busy() ? snapshot()?.id : undefined}
         onSelect={(id) => vscode.postMessage({ type: "open-session", sessionId: id })}
         onNew={() => vscode.postMessage({ type: "new-session" })}
       />

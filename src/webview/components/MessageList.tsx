@@ -8,6 +8,7 @@ import {
   type ToolResultItem,
 } from "../toolCall";
 import { ToolCard } from "./ToolCard";
+import { LoadingIndicator } from "./LoadingIndicator";
 
 marked.setOptions({ gfm: true, breaks: true });
 
@@ -48,8 +49,8 @@ export function MessageList(props: {
   const inlined = () => assistantToolCallIds(props.items);
 
   return (
-    <div class="messages-container">
-      <Show when={props.items.length === 0}>
+    <div class="messages-container" aria-busy={props.busy ? "true" : "false"}>
+      <Show when={props.items.length === 0 && !props.busy}>
         <div class="empty-state">Start a session to talk to Pi</div>
       </Show>
       <div class="messages-content">
@@ -65,6 +66,9 @@ export function MessageList(props: {
             />
           )}
         </For>
+        <Show when={props.busy}>
+          <LoadingIndicator />
+        </Show>
       </div>
     </div>
   );

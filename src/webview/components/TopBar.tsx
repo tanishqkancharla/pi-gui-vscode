@@ -2,11 +2,13 @@ import { For, Show, createSignal, onCleanup, onMount } from "solid-js";
 import type { SessionMeta } from "../../shared/messages";
 import { shouldOpenSession } from "../../shared/sessions";
 import { IconChevronDown, IconPlus } from "../icons";
+import { LoadingIndicator } from "./LoadingIndicator";
 
 export function TopBar(props: {
   sessions: SessionMeta[];
   currentId: string | undefined;
   currentTitle: string;
+  busyId?: string;
   onSelect: (id: string) => void;
   onNew: () => void;
 }) {
@@ -39,7 +41,12 @@ export function TopBar(props: {
           classList={{ active: open() }}
           onClick={() => setOpen(!open())}
         >
-          <span class="session-title">{props.currentTitle}</span>
+          <span class="session-title">
+            <Show when={props.busyId && props.busyId === props.currentId}>
+              <LoadingIndicator compact />
+            </Show>
+            <span class="session-title-text">{props.currentTitle}</span>
+          </span>
           <IconChevronDown size={14} class="dropdown-arrow" />
         </button>
         <Show when={open()}>
@@ -59,7 +66,12 @@ export function TopBar(props: {
                     props.onSelect(session.id);
                   }}
                 >
-                  <span class="session-item-title">{title(session)}</span>
+                  <span class="session-item-title">
+                    <Show when={session.id === props.busyId}>
+                      <LoadingIndicator compact />
+                    </Show>
+                    <span class="session-item-title-text">{title(session)}</span>
+                  </span>
                 </button>
               )}
             </For>

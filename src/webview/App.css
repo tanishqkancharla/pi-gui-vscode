@@ -226,13 +226,21 @@ body {
 
 .session-title {
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
   padding-bottom: 1px;
   font-size: var(--font-size-small);
   font-weight: 500;
   border-left: 2px solid transparent;
+}
+
+.session-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dropdown-arrow {
@@ -291,9 +299,36 @@ body {
   font-size: var(--font-size-small);
   font-weight: 500;
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  overflow: hidden;
+}
+
+.session-item-title-text {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.session-item.current .session-status-indicator {
+  color: var(--focus-border);
+}
+
+.loading-indicator {
+  font-family: var(--editor-font-family);
+  font-size: var(--font-size-base);
+  color: var(--description-foreground);
+  padding: var(--spacing-md);
+  user-select: none;
+}
+
+.session-status-indicator {
+  padding: 0;
+  font-size: var(--font-size-small);
+  flex-shrink: 0;
 }
 
 .session-loading {
