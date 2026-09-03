@@ -8,10 +8,10 @@ import {
 } from "../icons";
 import {
   effortLabel,
-  fallbackEffort,
   groupModels,
   isFastThinking,
   modelHint,
+  nextFastThinking,
   triggerLabel,
 } from "../picker";
 
@@ -95,22 +95,19 @@ export function ComposerSettings(props: {
       <Show when={open()}>
         <div class="settings-popover" role="menu">
           <Show when={panel() === "root"}>
-            <div class="settings-row">
+            <button
+              type="button"
+              class="settings-row"
+              role="switch"
+              aria-checked={fast()}
+              aria-label="Fast"
+              onClick={() => props.onThinking(nextFastThinking(props.thinking, levels()))}
+            >
               <span class="settings-row__label">Fast</span>
-              <button
-                type="button"
-                class="switch"
-                classList={{ on: fast() }}
-                role="switch"
-                aria-checked={fast()}
-                aria-label="Fast"
-                onClick={() =>
-                  props.onThinking(fast() ? fallbackEffort(levels()) : "off")
-                }
-              >
+              <span class="switch" classList={{ on: fast() }} aria-hidden="true">
                 <span class="switch__thumb" />
-              </button>
-            </div>
+              </span>
+            </button>
             <button
               type="button"
               class="settings-row settings-row--action"

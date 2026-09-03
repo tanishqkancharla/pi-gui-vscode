@@ -30,6 +30,7 @@ import {
   type PromptInput,
   type SteerInput,
 } from "@earendil-works/pi-server";
+import { sortSessionsNewestFirst } from "../shared/sessions";
 import type {
   ModelMetadata,
   ModelRef,
@@ -315,13 +316,15 @@ export class CodingAgentServerService implements PiServerService {
 
   async listSessions(): Promise<SessionMetadata[]> {
     const sessions = await SessionManager.list(this.cwd, this.sessionDir());
-    return sessions.map((session) => ({
-      id: session.id,
-      createdAt: session.created.getTime(),
-      updatedAt: session.modified.getTime(),
-      sessionName: session.name || session.firstMessage || undefined,
-      cwd: session.cwd || this.cwd,
-    }));
+    return sortSessionsNewestFirst(
+      sessions.map((session) => ({
+        id: session.id,
+        createdAt: session.created.getTime(),
+        updatedAt: session.modified.getTime(),
+        sessionName: session.name || session.firstMessage || undefined,
+        cwd: session.cwd || this.cwd,
+      })),
+    );
   }
 
   async listModels(): Promise<ModelMetadata[]> {

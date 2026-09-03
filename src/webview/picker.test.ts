@@ -6,6 +6,7 @@ import {
   groupModels,
   isFastThinking,
   modelHint,
+  nextFastThinking,
   providerLabel,
   triggerLabel,
 } from "./picker";
@@ -34,6 +35,8 @@ describe("picker labels", () => {
     expect(triggerLabel("high")).toBe("High");
     expect(isFastThinking("off")).toBe(true);
     expect(fallbackEffort(["off", "high"])).toBe("high");
+    expect(nextFastThinking("off", ["off", "high"])).toBe("high");
+    expect(nextFastThinking("high")).toBe("off");
   });
 
   it("groups models and marks missing keys", () => {

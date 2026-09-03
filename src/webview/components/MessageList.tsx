@@ -27,6 +27,7 @@ function toolOutput(item: Extract<TranscriptItem, { role: "tool" }>): string {
 
 export function MessageList(props: {
   items: readonly TranscriptItem[];
+  busy?: boolean;
   cwd?: string;
   onOpenFile: (path: string) => void;
 }) {
@@ -56,6 +57,7 @@ export function MessageList(props: {
           {(item) => (
             <MessageItem
               item={item}
+              streaming={Boolean(props.busy) && item === props.items.at(-1)}
               cwd={props.cwd}
               results={results()}
               inlined={inlined()}
@@ -70,6 +72,7 @@ export function MessageList(props: {
 
 function MessageItem(props: {
   item: TranscriptItem;
+  streaming?: boolean;
   cwd?: string;
   results: Map<string, ToolResultItem>;
   inlined: Set<string>;
@@ -105,6 +108,7 @@ function MessageItem(props: {
         >
           <AssistantMessage
             item={props.item as Extract<TranscriptItem, { role: "assistant" }>}
+            streaming={props.streaming}
             cwd={props.cwd}
             results={props.results}
             onOpenFile={props.onOpenFile}
@@ -121,6 +125,7 @@ function MessageItem(props: {
 
 function AssistantMessage(props: {
   item: Extract<TranscriptItem, { role: "assistant" }>;
+  streaming?: boolean;
   cwd?: string;
   results: Map<string, ToolResultItem>;
   onOpenFile: (path: string) => void;
@@ -154,10 +159,19 @@ function AssistantMessage(props: {
                 </Show>
               }
             >
-              <div
-                class="markdown"
-                innerHTML={marked.parse((part as { text: string }).text) as string}
-              />
+              <Show
+                when={props.streaming || props.item.status === "streaming"}
+                fallback={
+                  <div
+                    class="markdown"
+                    innerHTML={marked.parse((part as { text: string }).text) as string}
+                  />
+                }
+              >
+                <div class="markdown markdown--streaming">
+                  {(part as { text: string }).text}
+                </div>
+              </Show>
             </Show>
           )}
         </For>

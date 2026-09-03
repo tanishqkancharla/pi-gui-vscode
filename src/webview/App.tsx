@@ -14,6 +14,7 @@ import {
   selectTranscript,
   type TranscriptState,
 } from "../shared/transcript";
+import { overlayCurrentSession, sortSessionsNewestFirst } from "../shared/sessions";
 import { vscode } from "./vscode";
 import { TopBar } from "./components/TopBar";
 import { MessageList } from "./components/MessageList";
@@ -36,6 +37,17 @@ export function App() {
     return state ? selectTranscript(state) : [];
   });
   const title = createMemo(() => snapshot()?.name || "New Session");
+  const pickerSessions = createMemo(() => {
+    const current = snapshot();
+    return sortSessionsNewestFirst(
+      overlayCurrentSession(
+        sessions(),
+        current
+          ? { id: current.id, name: current.name, updatedAt: current.updatedAt }
+          : undefined,
+      ),
+    );
+  });
   const busy = createMemo(() => snapshot()?.phase === "turn" || snapshot()?.phase === "retry");
   const queued = createMemo(() =>
     (snapshot()?.queuedSteer ?? []).map((item) =>
@@ -62,7 +74,7 @@ export function App() {
       }
       if (message.type === "error") setError(message.message);
       if (message.type === "server-snapshot") {
-        setSessions(message.sessions);
+        setSessions(sortSessionsNewestFirst(message.sessions));
         setModels(message.models);
       }
       if (message.type === "session-snapshot") {
@@ -90,6 +102,7 @@ export function App() {
   });
 
   createEffect(() => {
+    items();
     const container = document.querySelector(".messages-container");
     if (container) container.scrollTop = container.scrollHeight;
   });
@@ -116,7 +129,7 @@ export function App() {
   return (
     <div class="app">
       <TopBar
-        sessions={sessions()}
+        sessions={pickerSessions()}
         currentId={snapshot()?.id}
         currentTitle={title()}
         onSelect={(id) => vscode.postMessage({ type: "open-session", sessionId: id })}
@@ -125,6 +138,7 @@ export function App() {
       <StatusBanner status={status()} error={error()} />
       <MessageList
         items={items()}
+        busy={busy()}
         cwd={snapshot()?.cwd}
         onOpenFile={(path) => vscode.postMessage({ type: "open-file", path })}
       />

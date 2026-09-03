@@ -385,8 +385,8 @@ body {
   gap: 12px;
 }
 
-.markdown :where(p, ul, ol, pre, blockquote) {
-  margin: 0 0 8px;
+.markdown--streaming {
+  white-space: pre-wrap;
 }
 
 .markdown :where(p, ul, ol, pre, blockquote):last-child {
@@ -685,11 +685,6 @@ button.tool-file-path {
   color: var(--input-placeholder-foreground);
 }
 
-.input-divider {
-  height: 1px;
-  background-color: var(--border-color);
-}
-
 .input-buttons {
   display: flex;
   align-items: center;
@@ -734,10 +729,12 @@ button.tool-file-path {
 
 .settings-popover {
   position: absolute;
-  left: var(--spacing-sm);
+  left: auto;
   right: var(--spacing-sm);
   bottom: calc(100% + 4px);
   width: auto;
+  min-width: 200px;
+  max-width: 80%;
   background: var(--input-background);
   color: var(--foreground);
   border: 1px solid var(--border-color);
@@ -778,6 +775,7 @@ button.tool-file-path {
   border-top: 1px solid var(--border-color-muted);
 }
 
+.settings-row:hover,
 .settings-row--action:hover,
 .settings-back:hover,
 .settings-item:hover {
@@ -814,6 +812,7 @@ button.tool-file-path {
 
 .switch {
   position: relative;
+  display: inline-block;
   width: 22px;
   height: 12px;
   padding: 0;
@@ -957,6 +956,13 @@ button.tool-file-path {
   opacity: 0.8;
   display: flex;
   align-items: center;
+}
+
+.shortcut-button--secondary {
+  gap: var(--spacing-xs);
+}
+
+.shortcut-button--stop {
   justify-content: center;
 }
 
@@ -964,6 +970,10 @@ button.tool-file-path {
 .shortcut-button--stop:hover {
   opacity: 1;
   background-color: var(--button-secondary-hover-background);
+}
+
+.queue-label {
+  font-size: var(--font-size-small);
 }
 
 .mention-dropdown {

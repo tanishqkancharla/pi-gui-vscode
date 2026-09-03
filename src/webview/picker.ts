@@ -35,6 +35,13 @@ export function isFastThinking(level: ThinkingLevel): boolean {
   return level === "off";
 }
 
+export function nextFastThinking(
+  current: ThinkingLevel,
+  allowed?: ThinkingLevel[],
+): ThinkingLevel {
+  return isFastThinking(current) ? fallbackEffort(allowed) : "off";
+}
+
 export function fallbackEffort(allowed?: ThinkingLevel[]): ThinkingLevel {
   const options = allowed?.length ? allowed : (["medium"] as ThinkingLevel[]);
   return options.find((level) => level !== "off") ?? options[0] ?? "medium";

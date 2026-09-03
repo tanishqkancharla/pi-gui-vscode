@@ -26,6 +26,8 @@ pnpm package
 code --install-extension pi-gui-0.1.0.vsix
 ```
 
+`pnpm package` stages production `node_modules` (including the bundled Pi packages) into the VSIX. Do not use `vsce package --no-dependencies` — that produces an install that cannot start the local server.
+
 You still need Pi auth in `~/.pi/agent` (run `pi` and `/login`, or set a provider API key). Then reload the window.
 
 This is **not** on the VS Code Marketplace.

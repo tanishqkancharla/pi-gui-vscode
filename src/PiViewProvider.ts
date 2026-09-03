@@ -6,7 +6,7 @@ import {
   type WebviewMessage,
 } from "./shared/messages";
 import { createPiRuntime, type PiRuntime } from "./host/runtime";
-import { shouldOpenSession } from "./shared/sessions";
+import { overlayCurrentSession, shouldOpenSession, sortSessionsNewestFirst } from "./shared/sessions";
 
 const LAST_SESSION_KEY = "piGui.lastSessionId";
 
@@ -23,6 +23,7 @@ export class PiViewProvider implements vscode.WebviewViewProvider {
   private unsubRemote?: () => void;
   private unsubEvents?: () => void;
   private starting?: Promise<void>;
+  private lastPostedSnapshotKey?: string;
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
@@ -182,18 +183,19 @@ export class PiViewProvider implements vscode.WebviewViewProvider {
     this.unsubEvents?.();
     await this.remote?.dispose();
     this.remote = remote;
+    this.lastPostedSnapshotKey = undefined;
     if (remote.id) {
       await this.context.workspaceState.update(LAST_SESSION_KEY, remote.id);
     }
     this.unsubRemote = remote.subscribe((state) => {
-      if (state.snapshot) {
-        this.post({ type: "session-snapshot", snapshot: state.snapshot });
-      }
+      if (!state.snapshot) return;
+      const key = `${state.snapshot.id}:${state.snapshot.revision}`;
+      if (this.lastPostedSnapshotKey === key) return;
+      this.lastPostedSnapshotKey = key;
+      this.post({ type: "session-snapshot", snapshot: state.snapshot });
+      this.pushServerSnapshot();
     });
     this.unsubEvents = this.attachProgress(remote);
-    if (remote.snapshot) {
-      this.post({ type: "session-snapshot", snapshot: remote.snapshot });
-    }
     this.pushServerSnapshot();
   }
 
@@ -215,15 +217,24 @@ export class PiViewProvider implements vscode.WebviewViewProvider {
 
   private pushServerSnapshot(): void {
     const snapshot = this.runtime?.client.snapshot;
+    const current = this.remote?.snapshot;
+    const sessions = sortSessionsNewestFirst(
+      overlayCurrentSession(
+        (snapshot?.sessions ?? []).map((session) => ({
+          id: session.id,
+          createdAt: session.createdAt,
+          updatedAt: session.updatedAt,
+          sessionName: session.sessionName,
+          cwd: session.cwd,
+        })),
+        current
+          ? { id: current.id, name: current.name, updatedAt: current.updatedAt }
+          : undefined,
+      ),
+    );
     this.post({
       type: "server-snapshot",
-      sessions: (snapshot?.sessions ?? []).map((session) => ({
-        id: session.id,
-        createdAt: session.createdAt,
-        updatedAt: session.updatedAt,
-        sessionName: session.sessionName,
-        cwd: session.cwd,
-      })),
+      sessions,
       models: (snapshot?.models ?? []).map((model) => ({
         provider: model.provider,
         id: model.id,

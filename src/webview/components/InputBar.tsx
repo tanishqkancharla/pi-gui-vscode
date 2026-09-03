@@ -84,7 +84,6 @@ export function InputBar(props: {
             </For>
           </div>
         </Show>
-        <div class="input-divider" />
         <div class="input-buttons">
           <ComposerSettings
             models={props.models}
@@ -99,8 +98,15 @@ export function InputBar(props: {
           <Show
             when={props.busy && !props.value.trim()}
             fallback={
-              <button type="submit" class="shortcut-button shortcut-button--secondary">
-                {props.busy ? "Steer" : "Send"}
+              <button
+                type="submit"
+                class="shortcut-button shortcut-button--secondary"
+                aria-label={props.busy ? "Steer" : "Submit"}
+              >
+                <span>⌘⏎</span>
+                <Show when={props.busy}>
+                  <span class="queue-label">Steer</span>
+                </Show>
               </button>
             }
           >

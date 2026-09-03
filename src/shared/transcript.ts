@@ -42,6 +42,49 @@ function setProgressItem(state: TranscriptState, item: TranscriptItem): Transcri
   return { ...state, progressItems, progressOrder };
 }
 
+function streamedLength(item: TranscriptItem): number {
+  if (item.role !== "assistant") return 0;
+  return item.content.reduce((sum, part) => {
+    if (part.type === "text") return sum + part.text.length;
+    if (part.type === "thinking") return sum + part.thinking.length;
+    if (part.type === "toolCall") return sum + JSON.stringify(part.input ?? "").length;
+    return sum;
+  }, 0);
+}
+
+function emptyDeltaPart(
+  kind: "text" | "thinking" | "toolCall",
+): Extract<TranscriptItem, { role: "assistant" }>["content"][number] {
+  if (kind === "thinking") return { type: "thinking", thinking: "" };
+  if (kind === "toolCall") return { type: "toolCall", toolCallId: "", toolName: "", input: "" };
+  return { type: "text", text: "" };
+}
+
+function preserveAheadProgress(
+  snapshotState: TranscriptState,
+  previous: TranscriptState,
+): TranscriptState {
+  if (previous.progressItems.size === 0) return snapshotState;
+  const progressItems = new Map<string, TranscriptItem>();
+  const progressOrder: string[] = [];
+  for (const id of previous.progressOrder) {
+    const progress = previous.progressItems.get(id);
+    if (!progress) continue;
+    const committed = snapshotState.snapshot.transcript.find((item) => item.id === id);
+    if (!committed || streamedLength(progress) > streamedLength(committed)) {
+      progressItems.set(id, progress);
+      progressOrder.push(id);
+    }
+  }
+  if (progressItems.size === 0) return snapshotState;
+  return {
+    ...snapshotState,
+    progressItems,
+    progressOrder,
+    toolCallBuffers: new Map(previous.toolCallBuffers),
+  };
+}
+
 export function createTranscriptState(snapshot: SessionSnapshot): TranscriptState {
   return {
     snapshot: structuredClone(snapshot),
@@ -58,7 +101,9 @@ export function applyTranscriptSnapshot(
   if (state.snapshot.id === snapshot.id && snapshot.revision < state.snapshot.revision) {
     return state;
   }
-  return createTranscriptState(snapshot);
+  const next = createTranscriptState(snapshot);
+  if (state.snapshot.id !== snapshot.id) return next;
+  return preserveAheadProgress(next, state);
 }
 
 export function applyTranscriptProgress(
@@ -82,24 +127,31 @@ export function applyTranscriptProgress(
   if (!item || item.role !== "assistant") return state;
 
   let toolCallBuffers = state.toolCallBuffers;
-  const content = item.content.map((part, index) => {
-    if (index !== progress.contentIndex) return structuredClone(part);
-    if (progress.kind === "text" && part.type === "text") {
-      return { ...part, text: part.text + progress.delta };
-    }
-    if (progress.kind === "thinking" && part.type === "thinking") {
-      return { ...part, thinking: part.thinking + progress.delta };
-    }
-    if (progress.kind === "toolCall" && part.type === "toolCall") {
-      const key = `${progress.messageId}:${progress.contentIndex}`;
-      const existing =
-        state.toolCallBuffers.get(key) ?? (typeof part.input === "string" ? part.input : "");
-      const buffer = existing + progress.delta;
-      toolCallBuffers = new Map(state.toolCallBuffers).set(key, buffer);
-      return { ...part, input: parsePartialToolInput(buffer) };
-    }
-    return structuredClone(part);
-  });
+  const content = item.content.map((part) => structuredClone(part));
+  while (content.length <= progress.contentIndex) {
+    content.push(emptyDeltaPart(progress.kind));
+  }
+  const part = content[progress.contentIndex];
+  if (progress.kind === "text") {
+    content[progress.contentIndex] =
+      part.type === "text" ? { ...part, text: part.text + progress.delta } : { type: "text", text: progress.delta };
+  } else if (progress.kind === "thinking") {
+    content[progress.contentIndex] =
+      part.type === "thinking"
+        ? { ...part, thinking: part.thinking + progress.delta }
+        : { type: "thinking", thinking: progress.delta };
+  } else if (progress.kind === "toolCall") {
+    const key = `${progress.messageId}:${progress.contentIndex}`;
+    const existing =
+      state.toolCallBuffers.get(key) ??
+      (part.type === "toolCall" && typeof part.input === "string" ? part.input : "");
+    const buffer = existing + progress.delta;
+    toolCallBuffers = new Map(state.toolCallBuffers).set(key, buffer);
+    content[progress.contentIndex] =
+      part.type === "toolCall"
+        ? { ...part, input: parsePartialToolInput(buffer) }
+        : { type: "toolCall", toolCallId: "", toolName: "", input: parsePartialToolInput(buffer) };
+  }
   return setProgressItem({ ...state, toolCallBuffers }, { ...item, content });
 }
 
