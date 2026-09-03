@@ -313,6 +313,7 @@ body {
   white-space: nowrap;
 }
 
+.session-item.busy .session-status-indicator,
 .session-item.current .session-status-indicator {
   color: var(--focus-border);
 }
@@ -322,12 +323,18 @@ body {
   font-size: var(--font-size-base);
   color: var(--description-foreground);
   padding: var(--spacing-md);
+  line-height: 1;
   user-select: none;
 }
 
 .session-status-indicator {
+  display: inline-block;
+  width: 1ch;
   padding: 0;
-  font-size: var(--font-size-small);
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  text-align: center;
   flex-shrink: 0;
 }
 

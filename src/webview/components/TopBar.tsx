@@ -59,7 +59,10 @@ export function TopBar(props: {
                 <button
                   type="button"
                   class="session-item"
-                  classList={{ current: session.id === props.currentId }}
+                  classList={{
+                    current: session.id === props.currentId,
+                    busy: session.id === props.busyId,
+                  }}
                   onClick={() => {
                     setOpen(false);
                     if (!shouldOpenSession(props.currentId, session.id)) return;
