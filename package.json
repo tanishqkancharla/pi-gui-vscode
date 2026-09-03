@@ -4,6 +4,7 @@
   "description": "Pi coding agent sidebar for VS Code. Same chrome as OpenCode GUI, dumb PiClient.",
   "version": "0.1.0",
   "publisher": "pi-gui",
+  "icon": "media/icon.png",
   "license": "MIT",
   "private": true,
   "type": "module",

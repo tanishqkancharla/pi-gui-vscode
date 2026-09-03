@@ -6,6 +6,28 @@ Installing the extension is enough. It bundles `@earendil-works/pi-coding-agent`
 
 If you already use the Pi CLI, the sidebar shares `~/.pi/agent` (auth, models, sessions) and will connect to an existing GUI socket instead of starting a second server.
 
+## Try it out
+
+This is **not** on the VS Code Marketplace yet, and this project does not have a public GitHub repository until you create one (use **Create repo** in Cursor). Until then it only runs from this workspace.
+
+From this repo in VS Code or Cursor:
+
+```bash
+pnpm install
+pnpm build
+```
+
+Press **F5** (`Run Extension`). An Extension Development Host window opens. Click the Pi mark in the activity bar.
+
+To install it in your normal VS Code window:
+
+```bash
+pnpm package
+code --install-extension pi-gui-0.1.0.vsix
+```
+
+You still need Pi auth in `~/.pi/agent` (run `pi` and `/login`, or set a provider API key). Then reload the window.
+
 ## Requirements
 
 - VS Code 1.96 or later
