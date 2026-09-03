@@ -98,15 +98,37 @@
   --card-background: oklch(from var(--sidebar-background) calc(l * 0.98) c h);
   --font-family: var(
     --vscode-font-family,
+    ui-sans-serif,
     -apple-system,
     BlinkMacSystemFont,
     "Segoe UI",
-    Roboto,
     Helvetica,
+    "Apple Color Emoji",
     Arial,
-    sans-serif
+    sans-serif,
+    "Segoe UI Emoji",
+    "Segoe UI Symbol"
   );
   --font-size: var(--vscode-font-size, 13px);
+  --menu-background: var(
+    --vscode-menu-background,
+    var(--vscode-editorWidget-background, var(--editor-background))
+  );
+  --menu-foreground: var(--vscode-menu-foreground, var(--foreground));
+  --menu-hover: var(
+    --vscode-list-hoverBackground,
+    color-mix(in oklch, var(--foreground) 3.5%, var(--menu-background))
+  );
+  --menu-separator: var(
+    --vscode-menu-separatorBackground,
+    oklch(from var(--foreground) l c h / 0.08)
+  );
+  --shadow-strong:
+    light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.08)) 0px 0px 0px 1px,
+    light-dark(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.12)) 0px 1px 1px -0.5px,
+    light-dark(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.12)) 0px 3px 3px -1.5px,
+    light-dark(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.12)) 0px 6px 6px -3px,
+    light-dark(rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.08)) 0px 12px 12px -6px;
   --spacing-xs: 4px;
   --spacing-sm: 6px;
   --spacing-md: 8px;
@@ -147,7 +169,10 @@ body {
   background-color: var(--sidebar-background);
   font-family: var(--font-family);
   font-size: var(--font-size);
+  line-height: 20px;
+  font-weight: 400;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 .app {
@@ -211,10 +236,10 @@ body {
 }
 
 .dropdown-arrow {
-  font-size: 10px;
-  opacity: 0.7;
+  opacity: 0.55;
   margin-left: var(--spacing-md);
   flex-shrink: 0;
+  color: var(--description-foreground);
 }
 
 .session-dropdown {
@@ -222,13 +247,13 @@ body {
   top: 100%;
   left: 0;
   right: 0;
-  margin-top: 4px;
-  max-height: 300px;
+  margin-top: 6px;
+  max-height: 280px;
   overflow-y: auto;
-  background: var(--input-background);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  box-shadow: var(--shadow-subtle);
+  background: var(--menu-background);
+  border: none;
+  border-radius: 10px;
+  box-shadow: var(--shadow-strong);
   z-index: 1000;
 }
 
@@ -236,22 +261,17 @@ body {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: var(--spacing-md);
-  cursor: pointer;
+  padding: 9px 12px;
+  cursor: default;
   border: none;
-  border-bottom: 1px solid var(--border-color-muted);
-  border-left: 2px solid transparent;
   background: transparent;
-  color: color-mix(in oklab, var(--foreground) 80%, var(--input-background));
+  color: var(--menu-foreground);
   text-align: left;
-}
-
-.session-item:last-child {
-  border-bottom: none;
+  font-family: var(--font-family);
 }
 
 .session-item:hover {
-  background-color: var(--hover-background);
+  background-color: var(--menu-hover);
   color: var(--foreground);
 }
 
@@ -537,20 +557,215 @@ body {
   gap: var(--spacing-sm);
 }
 
-.picker {
-  max-width: 42%;
+.composer-settings {
+  position: relative;
   min-width: 0;
-  background: transparent;
-  color: var(--foreground);
-  border: none;
-  font-size: var(--font-size-small);
-  opacity: 0.7;
-  cursor: pointer;
 }
 
-.picker:hover,
-.picker:focus {
-  opacity: 1;
+.composer-settings__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 160px;
+  padding: 2px 4px 2px 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--description-foreground);
+  font-family: var(--font-family);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 400;
+  cursor: default;
+}
+
+.composer-settings__trigger:hover,
+.composer-settings__trigger.open {
+  background: var(--menu-hover);
+  color: var(--foreground);
+}
+
+.composer-settings__chevron {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.settings-popover {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  width: min(280px, calc(100vw - 24px));
+  background: var(--menu-background);
+  color: var(--menu-foreground);
+  border-radius: 10px;
+  box-shadow: var(--shadow-strong);
+  z-index: 40;
+  overflow: hidden;
+}
+
+.settings-row,
+.settings-back,
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: var(--menu-foreground);
+  font-family: var(--font-family);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 400;
+  text-align: left;
+  cursor: default;
+}
+
+.settings-row + .settings-row,
+.settings-back + .settings-search,
+.settings-back + .settings-list {
+  box-shadow: inset 0 1px 0 var(--menu-separator);
+}
+
+.settings-row--action:hover,
+.settings-back:hover,
+.settings-item:hover {
+  background: var(--menu-hover);
+}
+
+.settings-row__label {
+  color: var(--foreground);
+}
+
+.settings-row__value {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: var(--description-foreground);
+}
+
+.settings-row__value-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+
+.settings-row__value svg,
+.settings-item svg,
+.settings-back svg {
+  flex-shrink: 0;
+  color: var(--description-foreground);
+}
+
+.switch {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--foreground) 14%, var(--menu-background));
+  cursor: default;
+  flex-shrink: 0;
+}
+
+.switch.on {
+  background: var(--focus-border-color);
+}
+
+.switch__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 100%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+}
+
+.switch.on .switch__thumb {
+  transform: translateX(12px);
+}
+
+.settings-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  color: var(--description-foreground);
+  box-shadow: inset 0 -1px 0 var(--menu-separator);
+}
+
+.settings-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--menu-foreground);
+  font-family: var(--font-family);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.settings-search input::placeholder {
+  color: var(--input-placeholder-foreground);
+}
+
+.settings-list {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.settings-list--models {
+  max-height: 260px;
+}
+
+.settings-group__label {
+  padding: 8px 14px 4px;
+  color: var(--description-foreground);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.settings-item.selected {
+  font-weight: 500;
+}
+
+.settings-item.selected svg {
+  color: var(--focus-border-color);
+}
+
+.settings-item.muted {
+  color: var(--description-foreground);
+}
+
+.settings-item__main {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.settings-item__hint {
+  color: var(--description-foreground);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 400;
+}
+
+.settings-empty {
+  padding: 16px 14px;
+  color: var(--description-foreground);
+  font-size: 13px;
 }
 
 .shortcut-button {

@@ -1,6 +1,6 @@
 import { For, Show, createEffect, createSignal } from "solid-js";
 import type { ModelMeta, ThinkingLevel } from "../../shared/messages";
-import { ModelPicker, ThinkingPicker } from "./Pickers";
+import { ComposerSettings } from "./Pickers";
 
 export function InputBar(props: {
   value: string;
@@ -86,16 +86,14 @@ export function InputBar(props: {
         </Show>
         <div class="input-divider" />
         <div class="input-buttons">
-          <ModelPicker
+          <ComposerSettings
             models={props.models}
-            provider={props.modelProvider}
-            id={props.modelId}
-            onChange={props.onModel}
-          />
-          <ThinkingPicker
-            level={props.thinking}
-            allowed={props.thinkingLevels}
-            onChange={props.onThinking}
+            modelProvider={props.modelProvider}
+            modelId={props.modelId}
+            thinking={props.thinking}
+            thinkingLevels={props.thinkingLevels}
+            onModel={props.onModel}
+            onThinking={props.onThinking}
           />
           <div style={{ flex: "1" }} />
           <Show

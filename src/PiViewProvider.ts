@@ -6,6 +6,7 @@ import {
   type WebviewMessage,
 } from "./shared/messages";
 import { createPiRuntime, type PiRuntime } from "./host/runtime";
+import { shouldOpenSession } from "./shared/sessions";
 
 const LAST_SESSION_KEY = "piGui.lastSessionId";
 
@@ -171,6 +172,7 @@ export class PiViewProvider implements vscode.WebviewViewProvider {
   }
 
   private async openSession(sessionId: string): Promise<void> {
+    if (!shouldOpenSession(this.remote?.id, sessionId)) return;
     const client = (await this.ensureRuntime()).client;
     await this.bindRemote(await RemoteSession.open(client, sessionId));
   }
