@@ -14,8 +14,10 @@ export function TopBar(props: {
 }) {
   const [open, setOpen] = createSignal(false);
   let root: HTMLDivElement | undefined;
-  const title = (session: SessionMeta) =>
-    session.sessionName?.trim() || `Session ${session.id.slice(0, 8)}`;
+  const title = (session: SessionMeta) => {
+    if (session.id === props.currentId) return props.currentTitle;
+    return session.sessionName?.trim() || `Session ${session.id.slice(0, 8)}`;
+  };
 
   onMount(() => {
     const onPointer = (event: MouseEvent) => {

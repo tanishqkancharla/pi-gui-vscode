@@ -303,7 +303,6 @@ body {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-  overflow: hidden;
 }
 
 .session-item-title-text {
@@ -329,7 +328,7 @@ body {
 
 .session-status-indicator {
   display: inline-block;
-  width: 1ch;
+  width: 1em;
   padding: 0;
   font-size: inherit;
   line-height: inherit;
