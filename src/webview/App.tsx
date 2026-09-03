@@ -125,6 +125,7 @@ export function App() {
       <StatusBanner status={status()} error={error()} />
       <MessageList
         items={items()}
+        cwd={snapshot()?.cwd}
         onOpenFile={(path) => vscode.postMessage({ type: "open-file", path })}
       />
       <InputBar

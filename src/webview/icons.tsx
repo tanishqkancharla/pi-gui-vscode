@@ -83,3 +83,49 @@ export function IconSearch(props: IconProps) {
     </Svg>
   );
 }
+
+export function IconFile(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path
+        {...stroke}
+        d="M7.75 19.25H16.25C17.3546 19.25 18.25 18.3546 18.25 17.25V9L14 4.75H7.75C6.64543 4.75 5.75 5.64543 5.75 6.75V17.25C5.75 18.3546 6.64543 19.25 7.75 19.25Z"
+      />
+      <path {...stroke} d="M18 9.25H13.75V5" />
+    </Svg>
+  );
+}
+
+export function IconFileDiff(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path
+        {...stroke}
+        d="M7.75 19.25H16.25C17.3546 19.25 18.25 18.3546 18.25 17.25V9L14 4.75H7.75C6.64543 4.75 5.75 5.64543 5.75 6.75V17.25C5.75 18.3546 6.64543 19.25 7.75 19.25Z"
+      />
+      <path {...stroke} d="M18 9.25H13.75V5" />
+      <path {...stroke} d="M9.75 15.25H14.25" />
+      <path {...stroke} d="M9.75 12.25H14.25" />
+    </Svg>
+  );
+}
+
+export function IconTerminal(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect width="14.5" height="14.5" x="4.75" y="4.75" rx="2" {...stroke} />
+      <path {...stroke} d="M8.75 10.75L11.25 13L8.75 15.25" />
+    </Svg>
+  );
+}
+
+export function IconTool(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path
+        {...stroke}
+        d="M10.75 13.25V10.25H8.25V11.25C8.25 11.8023 7.80228 12.25 7.25 12.25H5.75C5.19772 12.25 4.75 11.8023 4.75 11.25V5.75C4.75 5.19772 5.19772 4.75 5.75 4.75H7.25C7.80228 4.75 8.25 5.19772 8.25 5.75V6.75H15C15 6.75 19.25 6.75 19.25 11.25C19.25 11.25 17 10.25 14.25 10.25V13.25M10.75 13.25H14.25M10.75 13.25V19.25M14.25 13.25V19.25"
+      />
+    </Svg>
+  );
+}

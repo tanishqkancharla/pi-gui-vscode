@@ -21,6 +21,7 @@ function toolOutput(item: Extract<TranscriptItem, { role: "tool" }>): string {
 
 export function MessageList(props: {
   items: readonly TranscriptItem[];
+  cwd?: string;
   onOpenFile: (path: string) => void;
 }) {
   return (
@@ -30,7 +31,9 @@ export function MessageList(props: {
       </Show>
       <div class="messages-content">
         <For each={props.items}>
-          {(item) => <MessageItem item={item} onOpenFile={props.onOpenFile} />}
+          {(item) => (
+            <MessageItem item={item} cwd={props.cwd} onOpenFile={props.onOpenFile} />
+          )}
         </For>
       </div>
     </div>
@@ -39,6 +42,7 @@ export function MessageList(props: {
 
 function MessageItem(props: {
   item: TranscriptItem;
+  cwd?: string;
   onOpenFile: (path: string) => void;
 }) {
   return (
@@ -55,6 +59,7 @@ function MessageItem(props: {
                   input={(props.item as Extract<TranscriptItem, { role: "tool" }>).input}
                   output={toolOutput(props.item as Extract<TranscriptItem, { role: "tool" }>)}
                   status={(props.item as Extract<TranscriptItem, { role: "tool" }>).status}
+                  cwd={props.cwd}
                   onOpen={props.onOpenFile}
                 />
               </div>
@@ -63,6 +68,7 @@ function MessageItem(props: {
         >
           <AssistantMessage
             item={props.item as Extract<TranscriptItem, { role: "assistant" }>}
+            cwd={props.cwd}
             onOpenFile={props.onOpenFile}
           />
         </Show>
@@ -77,6 +83,7 @@ function MessageItem(props: {
 
 function AssistantMessage(props: {
   item: Extract<TranscriptItem, { role: "assistant" }>;
+  cwd?: string;
   onOpenFile: (path: string) => void;
 }) {
   return (
@@ -95,6 +102,7 @@ function AssistantMessage(props: {
                         name={(part as { toolName: string }).toolName}
                         input={(part as { input: unknown }).input}
                         status={props.item.status === "streaming" ? "running" : "called"}
+                        cwd={props.cwd}
                         onOpen={props.onOpenFile}
                       />
                     </Show>

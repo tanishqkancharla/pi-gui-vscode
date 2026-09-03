@@ -244,8 +244,8 @@ function IconChevronDownTrigger() {
   return (
     <svg
       class="composer-settings__chevron"
-      width="14"
-      height="14"
+      width="12"
+      height="12"
       viewBox="0 0 24 24"
       fill="none"
       focusable="false"
