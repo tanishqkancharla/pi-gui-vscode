@@ -47,4 +47,11 @@ describe("picker labels", () => {
     expect(modelHint(models[0])).toBeUndefined();
     expect(modelHint(models[1])).toBe("no key");
   });
+
+  it("lists authenticated providers first", () => {
+    expect(groupModels(models, "").map((group) => group.provider)).toEqual([
+      "openai-codex",
+      "anthropic",
+    ]);
+  });
 });

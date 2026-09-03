@@ -169,11 +169,29 @@ class AgentSessionRuntime implements PiSessionRuntime {
   }
 
   async setModel(model: ModelRef): Promise<void> {
+    const current = this.session.model;
+    if (current && current.provider === model.provider && current.id === model.id) {
+      return;
+    }
     const resolved = this.modelRuntime.getModel(model.provider, model.id);
     if (!resolved) {
       throw new PiServerError("invalid_request", `Unknown model ${model.provider}/${model.id}`);
     }
-    await this.runExclusive(() => this.session.setModel(resolved));
+    if (!this.modelRuntime.hasConfiguredAuth(model.provider)) {
+      throw new PiServerError(
+        "invalid_request",
+        `No API key for ${model.provider}/${model.id}`,
+      );
+    }
+    try {
+      await this.runExclusive(() => this.session.setModel(resolved));
+    } catch (error) {
+      if (error instanceof PiServerError) throw error;
+      throw new PiServerError(
+        "invalid_request",
+        error instanceof Error ? error.message : String(error),
+      );
+    }
   }
 
   async setThinking(thinkingLevel: ThinkingLevel): Promise<void> {

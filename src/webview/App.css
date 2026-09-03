@@ -624,6 +624,11 @@ body {
   cursor: default;
 }
 
+.settings-back {
+  justify-content: flex-start;
+  gap: 6px;
+}
+
 .settings-row + .settings-row,
 .settings-back + .settings-search,
 .settings-back + .settings-list {

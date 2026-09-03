@@ -64,9 +64,18 @@ export function groupModels(models: ModelMeta[], query: string): ModelGroup[] {
     list.push(model);
     groups.set(model.provider, list);
   }
-  return [...groups.entries()].map(([provider, grouped]) => ({
-    provider,
-    label: providerLabel(provider),
-    models: grouped,
-  }));
+  return [...groups.entries()]
+    .map(([provider, grouped]) => ({
+      provider,
+      label: providerLabel(provider),
+      models: [...grouped].sort(
+        (a, b) => Number(b.authenticated) - Number(a.authenticated),
+      ),
+    }))
+    .sort((a, b) => {
+      const aAuth = a.models.some((model) => model.authenticated) ? 0 : 1;
+      const bAuth = b.models.some((model) => model.authenticated) ? 0 : 1;
+      if (aAuth !== bAuth) return aAuth - bAuth;
+      return a.label.localeCompare(b.label);
+    });
 }

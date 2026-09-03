@@ -151,7 +151,7 @@ export function ComposerSettings(props: {
                     class="settings-item"
                     classList={{ selected: level === props.thinking }}
                     onClick={() => {
-                      props.onThinking(level);
+                      if (level !== props.thinking) props.onThinking(level);
                       setPanel("root");
                     }}
                   >
@@ -208,6 +208,10 @@ export function ComposerSettings(props: {
                               muted: !model.authenticated,
                             }}
                             onClick={() => {
+                              if (selected) {
+                                close();
+                                return;
+                              }
                               props.onModel(model.provider, model.id);
                               close();
                             }}
