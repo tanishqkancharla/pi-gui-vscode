@@ -1,6 +1,12 @@
 import { For, Show } from "solid-js";
 import type { TranscriptItem } from "@earendil-works/pi-protocol";
 import { marked } from "marked";
+import {
+  assistantToolCallIds,
+  indexToolResults,
+  resolvedToolStatus,
+  type ToolResultItem,
+} from "../toolCall";
 import { ToolCard } from "./ToolCard";
 
 marked.setOptions({ gfm: true, breaks: true });
@@ -24,6 +30,22 @@ export function MessageList(props: {
   cwd?: string;
   onOpenFile: (path: string) => void;
 }) {
+  const results = () =>
+    indexToolResults(
+      props.items.flatMap((item) => {
+        if (item.role !== "tool") return [];
+        return [
+          {
+            role: "tool",
+            toolCallId: item.toolCallId,
+            status: item.status,
+            output: toolOutput(item),
+          },
+        ];
+      }),
+    );
+  const inlined = () => assistantToolCallIds(props.items);
+
   return (
     <div class="messages-container">
       <Show when={props.items.length === 0}>
@@ -32,7 +54,13 @@ export function MessageList(props: {
       <div class="messages-content">
         <For each={props.items}>
           {(item) => (
-            <MessageItem item={item} cwd={props.cwd} onOpenFile={props.onOpenFile} />
+            <MessageItem
+              item={item}
+              cwd={props.cwd}
+              results={results()}
+              inlined={inlined()}
+              onOpenFile={props.onOpenFile}
+            />
           )}
         </For>
       </div>
@@ -43,6 +71,8 @@ export function MessageList(props: {
 function MessageItem(props: {
   item: TranscriptItem;
   cwd?: string;
+  results: Map<string, ToolResultItem>;
+  inlined: Set<string>;
   onOpenFile: (path: string) => void;
 }) {
   return (
@@ -52,7 +82,14 @@ function MessageItem(props: {
         <Show
           when={props.item.role === "assistant"}
           fallback={
-            <Show when={props.item.role === "tool"}>
+            <Show
+              when={
+                props.item.role === "tool" &&
+                !props.inlined.has(
+                  (props.item as Extract<TranscriptItem, { role: "tool" }>).toolCallId,
+                )
+              }
+            >
               <div class="message message--tool">
                 <ToolCard
                   name={(props.item as Extract<TranscriptItem, { role: "tool" }>).toolName}
@@ -69,6 +106,7 @@ function MessageItem(props: {
           <AssistantMessage
             item={props.item as Extract<TranscriptItem, { role: "assistant" }>}
             cwd={props.cwd}
+            results={props.results}
             onOpenFile={props.onOpenFile}
           />
         </Show>
@@ -84,6 +122,7 @@ function MessageItem(props: {
 function AssistantMessage(props: {
   item: Extract<TranscriptItem, { role: "assistant" }>;
   cwd?: string;
+  results: Map<string, ToolResultItem>;
   onOpenFile: (path: string) => void;
 }) {
   return (
@@ -98,10 +137,11 @@ function AssistantMessage(props: {
                   when={part.type === "thinking"}
                   fallback={
                     <Show when={part.type === "toolCall"}>
-                      <ToolCard
-                        name={(part as { toolName: string }).toolName}
-                        input={(part as { input: unknown }).input}
-                        status={props.item.status === "streaming" ? "running" : "called"}
+                      <AssistantToolCall
+                        part={part as Extract<(typeof props.item.content)[number], { type: "toolCall" }>}
+                        result={props.results.get(
+                          (part as { toolCallId: string }).toolCallId,
+                        )}
                         cwd={props.cwd}
                         onOpen={props.onOpenFile}
                       />
@@ -123,5 +163,23 @@ function AssistantMessage(props: {
         </For>
       </div>
     </div>
+  );
+}
+
+function AssistantToolCall(props: {
+  part: { toolName: string; input: unknown; toolCallId: string };
+  result?: ToolResultItem;
+  cwd?: string;
+  onOpen?: (path: string) => void;
+}) {
+  return (
+    <ToolCard
+      name={props.part.toolName}
+      input={props.part.input}
+      output={props.result?.output}
+      status={resolvedToolStatus(props.result)}
+      cwd={props.cwd}
+      onOpen={props.onOpen}
+    />
   );
 }

@@ -65,12 +65,48 @@ export function genericTitle(name: string): string {
 }
 
 export function isToolPending(status?: string): boolean {
-  return (
-    status === "running" ||
-    status === "pending" ||
-    status === "called" ||
-    status === "streaming"
-  );
+  return status === "running" || status === "pending";
+}
+
+export type ToolResultItem = {
+  toolCallId: string;
+  status: string;
+  output?: string;
+};
+
+export function indexToolResults(
+  items: readonly { role: string; toolCallId?: string; status?: string; output?: string }[],
+): Map<string, ToolResultItem> {
+  const map = new Map<string, ToolResultItem>();
+  for (const item of items) {
+    if (item.role !== "tool" || !item.toolCallId) continue;
+    map.set(item.toolCallId, {
+      toolCallId: item.toolCallId,
+      status: item.status ?? "complete",
+      output: item.output,
+    });
+  }
+  return map;
+}
+
+export function assistantToolCallIds(
+  items: readonly {
+    role: string;
+    content?: readonly { type: string; toolCallId?: string }[];
+  }[],
+): Set<string> {
+  const ids = new Set<string>();
+  for (const item of items) {
+    if (item.role !== "assistant") continue;
+    for (const part of item.content ?? []) {
+      if (part.type === "toolCall" && part.toolCallId) ids.add(part.toolCallId);
+    }
+  }
+  return ids;
+}
+
+export function resolvedToolStatus(result?: { status: string }): string {
+  return result?.status ?? "running";
 }
 
 export function isToolError(status?: string): boolean {

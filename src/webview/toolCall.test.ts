@@ -7,6 +7,9 @@ import {
   lineRange,
   splitFilePath,
   toRelativePath,
+  assistantToolCallIds,
+  indexToolResults,
+  resolvedToolStatus,
   toolCommand,
   toolPath,
 } from "./toolCall";
@@ -42,7 +45,10 @@ describe("tool call helpers", () => {
     expect(genericTitle("web_search")).toBe("Web searching");
     expect(genericTitle("bash")).toBe("Bashing");
     expect(isToolPending("running")).toBe(true);
+    expect(isToolPending("pending")).toBe(true);
     expect(isToolPending("complete")).toBe(false);
+    expect(isToolPending("called")).toBe(false);
+    expect(isToolPending("streaming")).toBe(false);
     expect(errorFooterText("Interrupted by user")).toBe("Interrupted");
     expect(errorFooterText("ENOENT\nmore")).toBe("ENOENT");
   });
@@ -52,5 +58,23 @@ describe("tool call helpers", () => {
       diffStats("--- a\n+++ b\n@@ -1 +1 @@\n-old\n+new\n+extra\n"),
     ).toEqual({ additions: 2, deletions: 1 });
     expect(diffStats("ok")).toBeUndefined();
+  });
+
+  it("resolves assistant tool stubs against later results", () => {
+    expect(resolvedToolStatus(undefined)).toBe("running");
+    expect(resolvedToolStatus({ status: "complete" })).toBe("complete");
+    const items = [
+      {
+        role: "assistant",
+        content: [{ type: "toolCall", toolCallId: "c1" }],
+      },
+      { role: "tool", toolCallId: "c1", status: "complete", output: "ok" },
+      { role: "tool", toolCallId: "orphan", status: "complete", output: "x" },
+    ];
+    expect(assistantToolCallIds(items)).toEqual(new Set(["c1"]));
+    expect(indexToolResults(items).get("c1")).toMatchObject({
+      status: "complete",
+      output: "ok",
+    });
   });
 });
