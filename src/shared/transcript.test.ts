@@ -52,6 +52,49 @@ describe("applyTranscriptProgress", () => {
     });
   });
 
+  it("does not invent an empty toolCall stub when a tool delta arrives before the part exists", () => {
+    const next = applyTranscriptProgress(createTranscriptState(snapshot), {
+      type: "assistant_delta",
+      messageId: "a1",
+      contentIndex: 1,
+      kind: "toolCall",
+      delta: '{"command":"ls"}',
+    });
+    expect(selectTranscript(next)[0]).toMatchObject({
+      content: [{ type: "text", text: "Hel" }],
+    });
+  });
+
+  it("applies toolCall deltas onto an existing named tool part", () => {
+    const started = applyTranscriptProgress(createTranscriptState(snapshot), {
+      type: "item_updated",
+      item: {
+        id: "a1",
+        role: "assistant",
+        content: [
+          { type: "text", text: "Hel" },
+          { type: "toolCall", toolCallId: "c1", toolName: "bash", input: {} },
+        ],
+        model: { provider: "anthropic", id: "claude" },
+        timestamp: 1,
+        status: "streaming",
+      },
+    });
+    const next = applyTranscriptProgress(started, {
+      type: "assistant_delta",
+      messageId: "a1",
+      contentIndex: 1,
+      kind: "toolCall",
+      delta: '{"command":"ls"}',
+    });
+    expect(selectTranscript(next)[0]).toMatchObject({
+      content: [
+        { type: "text", text: "Hel" },
+        { type: "toolCall", toolCallId: "c1", toolName: "bash", input: { command: "ls" } },
+      ],
+    });
+  });
+
   it("grows an empty assistant item when the first delta arrives", () => {
     const empty: SessionSnapshot = {
       ...snapshot,
@@ -105,6 +148,85 @@ describe("applyTranscriptSnapshot", () => {
     const next = applyTranscriptSnapshot(streamed, lagging);
     expect(selectTranscript(next)[0]).toMatchObject({
       content: [{ type: "text", text: "Hello world" }],
+    });
+  });
+
+  it("drops progress that invented empty tool stubs once the snapshot has named tools", () => {
+    const stubbed = applyTranscriptProgress(createTranscriptState(snapshot), {
+      type: "item_updated",
+      item: {
+        id: "a1",
+        role: "assistant",
+        content: [
+          { type: "text", text: "Hello world extra" },
+          { type: "toolCall", toolCallId: "", toolName: "", input: "" },
+        ],
+        model: { provider: "anthropic", id: "claude" },
+        timestamp: 1,
+        status: "streaming",
+      },
+    });
+    const named: SessionSnapshot = {
+      ...snapshot,
+      revision: 2,
+      transcript: [
+        {
+          id: "a1",
+          role: "assistant",
+          content: [
+            { type: "text", text: "Hel" },
+            { type: "toolCall", toolCallId: "c1", toolName: "bash", input: { command: "ls" } },
+          ],
+          model: { provider: "anthropic", id: "claude" },
+          timestamp: 1,
+          status: "streaming",
+        },
+      ],
+    };
+    const next = applyTranscriptSnapshot(stubbed, named);
+    expect(selectTranscript(next)[0]).toMatchObject({
+      content: [
+        { type: "text", text: "Hel" },
+        { type: "toolCall", toolCallId: "c1", toolName: "bash", input: { command: "ls" } },
+      ],
+    });
+  });
+
+  it("keeps named in-flight tools when a lagging snapshot still has text only", () => {
+    const withTool = applyTranscriptProgress(createTranscriptState(snapshot), {
+      type: "item_updated",
+      item: {
+        id: "a1",
+        role: "assistant",
+        content: [
+          { type: "text", text: "Hel" },
+          { type: "toolCall", toolCallId: "c1", toolName: "bash", input: { command: "ls" } },
+        ],
+        model: { provider: "anthropic", id: "claude" },
+        timestamp: 1,
+        status: "streaming",
+      },
+    });
+    const lagging: SessionSnapshot = {
+      ...snapshot,
+      revision: 2,
+      transcript: [
+        {
+          id: "a1",
+          role: "assistant",
+          content: [{ type: "text", text: "Hel" }],
+          model: { provider: "anthropic", id: "claude" },
+          timestamp: 1,
+          status: "streaming",
+        },
+      ],
+    };
+    const next = applyTranscriptSnapshot(withTool, lagging);
+    expect(selectTranscript(next)[0]).toMatchObject({
+      content: [
+        { type: "text", text: "Hel" },
+        { type: "toolCall", toolCallId: "c1", toolName: "bash", input: { command: "ls" } },
+      ],
     });
   });
 

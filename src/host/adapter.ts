@@ -92,6 +92,48 @@ function toTranscript(sessionId: string, messages: readonly Message[]): Transcri
   return items;
 }
 
+function toStreamingAssistantItem(
+  sessionId: string,
+  sessionMessages: readonly Message[],
+  message: AssistantMessage,
+): TranscriptItem | undefined {
+  const list = sessionMessages.includes(message) ? [...sessionMessages] : [...sessionMessages, message];
+  const index = list.indexOf(message);
+  const id = messageId(sessionId, index, "assistant", message.timestamp);
+  try {
+    return toProtocolAssistantMessage(message, { id });
+  } catch {
+    const item: TranscriptItem = {
+      id,
+      role: "assistant",
+      content: message.content.flatMap((part, partIndex) => {
+        if (part.type === "text") return [{ type: "text" as const, text: part.text ?? "" }];
+        if (part.type === "thinking") {
+          return [{ type: "thinking" as const, thinking: part.thinking ?? "" }];
+        }
+        if (part.type === "toolCall") {
+          return [
+            {
+              type: "toolCall" as const,
+              toolCallId: part.id || `pending:${partIndex}`,
+              toolName: part.name || "tool",
+              input: part.arguments ?? {},
+            },
+          ];
+        }
+        return [];
+      }),
+      model: {
+        provider: message.provider || "none",
+        id: message.model || "none",
+      },
+      timestamp: Number.isSafeInteger(message.timestamp) ? message.timestamp : Date.now(),
+      status: "streaming",
+    };
+    return item;
+  }
+}
+
 function progressFromAssistantEvent(
   messageIdValue: string,
   event: AssistantMessageEvent,
@@ -226,17 +268,35 @@ class AgentSessionRuntime implements PiSessionRuntime {
 
   private onAgentEvent(event: AgentSessionEvent): void {
     if (event.type === "message_start" && event.message.role === "assistant") {
-      const item = this.latestAssistantItem();
+      const item = toStreamingAssistantItem(
+        this.protocolId,
+        this.session.messages as Message[],
+        event.message as AssistantMessage,
+      );
       if (item) {
         this.streamingMessageId = item.id;
         this.emit({ type: "progress", progress: { type: "item_started", item } });
       }
     }
     if (event.type === "message_update" && event.message.role === "assistant") {
+      const assistantEvent = event.assistantMessageEvent;
       const id = this.streamingMessageId ?? this.latestAssistantItem()?.id;
-      if (id) {
-        const progress = progressFromAssistantEvent(id, event.assistantMessageEvent);
+      if (
+        id &&
+        (assistantEvent.type === "text_delta" || assistantEvent.type === "thinking_delta")
+      ) {
+        const progress = progressFromAssistantEvent(id, assistantEvent);
         if (progress) this.emit({ type: "progress", progress });
+        return;
+      }
+      const item = toStreamingAssistantItem(
+        this.protocolId,
+        this.session.messages as Message[],
+        event.message as AssistantMessage,
+      );
+      if (item) {
+        this.streamingMessageId = item.id;
+        this.emit({ type: "progress", progress: { type: "item_updated", item } });
       }
     }
     if (

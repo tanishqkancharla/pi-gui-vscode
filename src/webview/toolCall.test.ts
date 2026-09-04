@@ -9,6 +9,7 @@ import {
   toRelativePath,
   assistantToolCallIds,
   indexToolResults,
+  isRenderableToolCall,
   resolvedToolStatus,
   toolCommand,
   toolPath,
@@ -20,7 +21,17 @@ describe("tool call helpers", () => {
     expect(toolPath({ file_path: "/tmp/x" })).toBe("/tmp/x");
     expect(toolPath({ filePath: "a.ts" })).toBe("a.ts");
     expect(toolCommand({ command: "ls -la" })).toBe("ls -la");
+    expect(toolCommand('{"command":"ls"}')).toBe("ls");
+    expect(toolPath('{"path":"src/app.ts"}')).toBe("src/app.ts");
     expect(toolPath({ command: "ls" })).toBeUndefined();
+  });
+
+  it("hides tool cards that have no name or id yet", () => {
+    expect(isRenderableToolCall({ type: "toolCall", toolName: "bash", toolCallId: "c1" })).toBe(true);
+    expect(isRenderableToolCall({ type: "toolCall", toolName: "bash" })).toBe(true);
+    expect(isRenderableToolCall({ type: "toolCall", toolCallId: "c1" })).toBe(true);
+    expect(isRenderableToolCall({ type: "toolCall", toolName: "", toolCallId: "" })).toBe(false);
+    expect(isRenderableToolCall({ type: "text" })).toBe(false);
   });
 
   it("splits and relativizes file paths like OpenCode GUI", () => {

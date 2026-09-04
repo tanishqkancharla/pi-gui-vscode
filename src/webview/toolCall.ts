@@ -1,4 +1,15 @@
 export function asRecord(input: unknown): Record<string, unknown> | undefined {
+  if (typeof input === "string") {
+    try {
+      const parsed = JSON.parse(input) as unknown;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      return undefined;
+    }
+    return undefined;
+  }
   if (!input || typeof input !== "object") return undefined;
   return input as Record<string, unknown>;
 }
@@ -87,6 +98,14 @@ export function indexToolResults(
     });
   }
   return map;
+}
+
+export function isRenderableToolCall(part: {
+  type: string;
+  toolName?: string;
+  toolCallId?: string;
+}): boolean {
+  return part.type === "toolCall" && Boolean(part.toolName || part.toolCallId);
 }
 
 export function assistantToolCallIds(

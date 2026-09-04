@@ -1,9 +1,10 @@
-import { For, Show } from "solid-js";
+import { For, Index, Match, Show, Switch, createMemo, type Accessor } from "solid-js";
 import type { TranscriptItem } from "@earendil-works/pi-protocol";
 import { marked } from "marked";
 import {
   assistantToolCallIds,
   indexToolResults,
+  isRenderableToolCall,
   resolvedToolStatus,
   type ToolResultItem,
 } from "../toolCall";
@@ -11,6 +12,10 @@ import { ToolCard } from "./ToolCard";
 import { LoadingIndicator } from "./LoadingIndicator";
 
 marked.setOptions({ gfm: true, breaks: true });
+
+type AssistantItem = Extract<TranscriptItem, { role: "assistant" }>;
+type AssistantPart = AssistantItem["content"][number];
+type ToolCallPart = Extract<AssistantPart, { type: "toolCall" }>;
 
 function userText(item: Extract<TranscriptItem, { role: "user" }>): string {
   return item.content
@@ -54,11 +59,12 @@ export function MessageList(props: {
         <div class="empty-state">Start a session to talk to Pi</div>
       </Show>
       <div class="messages-content">
-        <For each={props.items}>
-          {(item) => (
-            <MessageItem
-              item={item}
-              streaming={Boolean(props.busy) && item === props.items.at(-1)}
+        <For each={props.items.map((item) => item.id)}>
+          {(id) => (
+            <MessageById
+              id={id}
+              items={props.items}
+              busy={props.busy}
               cwd={props.cwd}
               results={results()}
               inlined={inlined()}
@@ -71,6 +77,30 @@ export function MessageList(props: {
         </Show>
       </div>
     </div>
+  );
+}
+
+function MessageById(props: {
+  id: string;
+  items: readonly TranscriptItem[];
+  busy?: boolean;
+  cwd?: string;
+  results: Map<string, ToolResultItem>;
+  inlined: Set<string>;
+  onOpenFile: (path: string) => void;
+}) {
+  const item = createMemo(() => props.items.find((entry) => entry.id === props.id));
+  return (
+    <Show when={item() !== undefined}>
+      <MessageItem
+        item={item()!}
+        streaming={Boolean(props.busy) && props.id === props.items.at(-1)?.id}
+        cwd={props.cwd}
+        results={props.results}
+        inlined={props.inlined}
+        onOpenFile={props.onOpenFile}
+      />
+    </Show>
   );
 }
 
@@ -111,7 +141,7 @@ function MessageItem(props: {
           }
         >
           <AssistantMessage
-            item={props.item as Extract<TranscriptItem, { role: "assistant" }>}
+            item={props.item as AssistantItem}
             streaming={props.streaming}
             cwd={props.cwd}
             results={props.results}
@@ -128,7 +158,7 @@ function MessageItem(props: {
 }
 
 function AssistantMessage(props: {
-  item: Extract<TranscriptItem, { role: "assistant" }>;
+  item: AssistantItem;
   streaming?: boolean;
   cwd?: string;
   results: Map<string, ToolResultItem>;
@@ -137,55 +167,72 @@ function AssistantMessage(props: {
   return (
     <div class="message message--assistant">
       <div class="message-content">
-        <For each={props.item.content}>
+        <Index each={props.item.content}>
           {(part) => (
-            <Show
-              when={part.type === "text"}
-              fallback={
-                <Show
-                  when={part.type === "thinking"}
-                  fallback={
-                    <Show when={part.type === "toolCall"}>
-                      <AssistantToolCall
-                        part={part as Extract<(typeof props.item.content)[number], { type: "toolCall" }>}
-                        result={props.results.get(
-                          (part as { toolCallId: string }).toolCallId,
-                        )}
-                        cwd={props.cwd}
-                        onOpen={props.onOpenFile}
-                      />
-                    </Show>
-                  }
-                >
-                  <div class="thinking-block">
-                    {(part as { thinking: string }).thinking}
-                  </div>
-                </Show>
-              }
-            >
-              <Show
-                when={props.streaming || props.item.status === "streaming"}
-                fallback={
-                  <div
-                    class="markdown"
-                    innerHTML={marked.parse((part as { text: string }).text) as string}
-                  />
-                }
-              >
-                <div class="markdown markdown--streaming">
-                  {(part as { text: string }).text}
-                </div>
-              </Show>
-            </Show>
+            <AssistantContentPart
+              part={part}
+              item={props.item}
+              streaming={props.streaming}
+              cwd={props.cwd}
+              results={props.results}
+              onOpenFile={props.onOpenFile}
+            />
           )}
-        </For>
+        </Index>
       </div>
     </div>
   );
 }
 
+function AssistantContentPart(props: {
+  part: Accessor<AssistantPart>;
+  item: AssistantItem;
+  streaming?: boolean;
+  cwd?: string;
+  results: Map<string, ToolResultItem>;
+  onOpenFile: (path: string) => void;
+}) {
+  const current = () => props.part();
+  const text = () => {
+    const part = current();
+    return part.type === "text" ? part.text : "";
+  };
+  const thinking = () => {
+    const part = current();
+    return part.type === "thinking" ? part.thinking : "";
+  };
+  const tool = () => {
+    const part = current();
+    return part.type === "toolCall" && isRenderableToolCall(part) ? part : undefined;
+  };
+
+  return (
+    <Switch>
+      <Match when={text().length > 0}>
+        <Show
+          when={props.streaming || props.item.status === "streaming"}
+          fallback={<div class="markdown" innerHTML={marked.parse(text()) as string} />}
+        >
+          <div class="markdown markdown--streaming">{text()}</div>
+        </Show>
+      </Match>
+      <Match when={thinking().length > 0}>
+        <div class="thinking-block">{thinking()}</div>
+      </Match>
+      <Match when={tool() !== undefined}>
+        <AssistantToolCall
+          part={tool()!}
+          result={props.results.get(tool()!.toolCallId)}
+          cwd={props.cwd}
+          onOpen={props.onOpenFile}
+        />
+      </Match>
+    </Switch>
+  );
+}
+
 function AssistantToolCall(props: {
-  part: { toolName: string; input: unknown; toolCallId: string };
+  part: ToolCallPart;
   result?: ToolResultItem;
   cwd?: string;
   onOpen?: (path: string) => void;
