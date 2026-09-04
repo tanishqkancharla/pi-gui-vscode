@@ -105,7 +105,7 @@ export function isRenderableToolCall(part: {
   toolName?: string;
   toolCallId?: string;
 }): boolean {
-  return part.type === "toolCall" && Boolean(part.toolName || part.toolCallId);
+  return part.type === "toolCall" && Boolean(part.toolName?.trim());
 }
 
 export function assistantToolCallIds(

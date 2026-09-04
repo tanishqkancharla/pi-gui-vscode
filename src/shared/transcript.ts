@@ -60,9 +60,7 @@ function hasNamedToolCall(item: TranscriptItem): boolean {
 function hasEmptyToolStub(item: TranscriptItem): boolean {
   return (
     item.role === "assistant" &&
-    item.content.some(
-      (part) => part.type === "toolCall" && !part.toolName && !part.toolCallId,
-    )
+    item.content.some((part) => part.type === "toolCall" && !part.toolName?.trim())
   );
 }
 

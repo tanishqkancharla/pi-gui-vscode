@@ -61,42 +61,11 @@ function queuedUserItem(sessionId: string, text: string, index: number): Transcr
   };
 }
 
-function toTranscript(sessionId: string, messages: readonly Message[]): TranscriptItem[] {
-  const items: TranscriptItem[] = [];
-  const calls = new Map<string, ToolCall>();
-  messages.forEach((message, index) => {
-    const id = messageId(sessionId, index, message.role, message.timestamp);
-    if (message.role === "user") {
-      items.push(toProtocolUserMessage(message as UserMessage, { id }));
-      return;
-    }
-    if (message.role === "assistant") {
-      const assistant = message as AssistantMessage;
-      items.push(toProtocolAssistantMessage(assistant, { id }));
-      for (const part of assistant.content) {
-        if (part.type === "toolCall") calls.set(part.id, part);
-      }
-      return;
-    }
-    if (message.role === "toolResult") {
-      const result = message as ToolResultMessage;
-      const call = calls.get(result.toolCallId);
-      if (!call) return;
-      try {
-        items.push(toProtocolToolResultMessage(result, { id, call }));
-      } catch {
-        // Skip protocol-incompatible custom tool payloads.
-      }
-    }
-  });
-  return items;
-}
-
 function toStreamingAssistantItem(
   sessionId: string,
   sessionMessages: readonly Message[],
   message: AssistantMessage,
-): TranscriptItem | undefined {
+): TranscriptItem {
   const list = sessionMessages.includes(message) ? [...sessionMessages] : [...sessionMessages, message];
   const index = list.indexOf(message);
   const id = messageId(sessionId, index, "assistant", message.timestamp);
@@ -116,7 +85,7 @@ function toStreamingAssistantItem(
             {
               type: "toolCall" as const,
               toolCallId: part.id || `pending:${partIndex}`,
-              toolName: part.name || "tool",
+              toolName: part.name?.trim() ?? "",
               input: part.arguments ?? {},
             },
           ];
@@ -132,6 +101,46 @@ function toStreamingAssistantItem(
     };
     return item;
   }
+}
+
+function toTranscript(sessionId: string, messages: readonly Message[]): TranscriptItem[] {
+  const items: TranscriptItem[] = [];
+  const calls = new Map<string, ToolCall>();
+  messages.forEach((message, index) => {
+    const id = messageId(sessionId, index, message.role, message.timestamp);
+    if (message.role === "user") {
+      try {
+        items.push(toProtocolUserMessage(message as UserMessage, { id }));
+      } catch {
+        items.push({
+          id,
+          role: "user",
+          content: [{ type: "text", text: String((message as UserMessage).content ?? "") }],
+          timestamp: Number.isSafeInteger(message.timestamp) ? message.timestamp : Date.now(),
+        });
+      }
+      return;
+    }
+    if (message.role === "assistant") {
+      const assistant = message as AssistantMessage;
+      items.push(toStreamingAssistantItem(sessionId, messages, assistant));
+      for (const part of assistant.content) {
+        if (part.type === "toolCall" && part.id) calls.set(part.id, part);
+      }
+      return;
+    }
+    if (message.role === "toolResult") {
+      const result = message as ToolResultMessage;
+      const call = calls.get(result.toolCallId);
+      if (!call) return;
+      try {
+        items.push(toProtocolToolResultMessage(result, { id, call }));
+      } catch {
+        // Skip protocol-incompatible custom tool payloads.
+      }
+    }
+  });
+  return items;
 }
 
 function progressFromAssistantEvent(
@@ -298,6 +307,15 @@ class AgentSessionRuntime implements PiSessionRuntime {
         this.streamingMessageId = item.id;
         this.emit({ type: "progress", progress: { type: "item_updated", item } });
       }
+    }
+    if (event.type === "message_end" && event.message.role === "assistant") {
+      const item = toStreamingAssistantItem(
+        this.protocolId,
+        this.session.messages as Message[],
+        event.message as AssistantMessage,
+      );
+      this.streamingMessageId = item.id;
+      this.emit({ type: "progress", progress: { type: "item_finished", item } });
     }
     if (
       event.type === "message_end" ||

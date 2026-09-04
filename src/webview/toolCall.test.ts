@@ -26,11 +26,12 @@ describe("tool call helpers", () => {
     expect(toolPath({ command: "ls" })).toBeUndefined();
   });
 
-  it("hides tool cards that have no name or id yet", () => {
+  it("hides tool cards that have no name yet", () => {
     expect(isRenderableToolCall({ type: "toolCall", toolName: "bash", toolCallId: "c1" })).toBe(true);
     expect(isRenderableToolCall({ type: "toolCall", toolName: "bash" })).toBe(true);
-    expect(isRenderableToolCall({ type: "toolCall", toolCallId: "c1" })).toBe(true);
-    expect(isRenderableToolCall({ type: "toolCall", toolName: "", toolCallId: "" })).toBe(false);
+    expect(isRenderableToolCall({ type: "toolCall", toolCallId: "c1" })).toBe(false);
+    expect(isRenderableToolCall({ type: "toolCall", toolName: "", toolCallId: "c1" })).toBe(false);
+    expect(isRenderableToolCall({ type: "toolCall", toolName: "  ", toolCallId: "c1" })).toBe(false);
     expect(isRenderableToolCall({ type: "text" })).toBe(false);
   });
 
