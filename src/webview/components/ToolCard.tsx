@@ -170,7 +170,7 @@ function ToolCallFrame(props: {
         <span class="tool-icon">{props.icon}</span>
         {props.header}
         <Show when={hasOutput()}>
-          <span class="tool-icon">
+          <span class="tool-icon tool-icon--trailing">
             <IconChevronDown
               size={18}
               class={open() ? "tool-icon__chevron is-open" : "tool-icon__chevron"}

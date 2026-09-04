@@ -533,6 +533,10 @@ body {
   display: block;
 }
 
+.tool-icon--trailing {
+  margin-left: auto;
+}
+
 .tool-icon__chevron {
   transition: transform 0.2s ease;
   flex-shrink: 0;
@@ -545,6 +549,7 @@ body {
 .tool-header-text {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: var(--spacing-sm);
   flex: 1;
   overflow: hidden;
@@ -559,7 +564,7 @@ body {
   display: flex;
   align-items: center;
   min-width: 0;
-  flex: 1;
+  flex: 0 1 auto;
   overflow: hidden;
 }
 
@@ -603,7 +608,7 @@ button.tool-file-path {
   display: flex;
   align-items: center;
   min-width: 0;
-  flex: 1;
+  max-width: 100%;
   overflow: hidden;
 }
 
