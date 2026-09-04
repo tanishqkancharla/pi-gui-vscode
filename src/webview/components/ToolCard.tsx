@@ -74,24 +74,26 @@ export function ToolCard(props: {
       }
       header={
         <span class="tool-header-text">
-          <Switch>
-            <Match when={kind() === "bash"}>
-              <span class="tool-text tool-text--bash">{toolCommand(props.input) || "Running command"}</span>
-            </Match>
-            <Match when={kind() === "generic"}>
-              <span class="tool-text">{genericTitle(props.name)}</span>
-            </Match>
-            <Match when={true}>
-              <FilePathHeader
-                path={relativePath() || (kind() === "read" ? "Reading file" : props.name === "write" ? "Writing file" : "Editing file")}
-                openable={Boolean(absolutePath())}
-                onOpen={() => {
-                  const target = absolutePath();
-                  if (target) props.onOpen?.(target);
-                }}
-              />
-            </Match>
-          </Switch>
+          <span class="tool-header-title">
+            <Switch>
+              <Match when={kind() === "bash"}>
+                <span class="tool-text tool-text--bash">{toolCommand(props.input) || "Running command"}</span>
+              </Match>
+              <Match when={kind() === "generic"}>
+                <span class="tool-text">{genericTitle(props.name)}</span>
+              </Match>
+              <Match when={true}>
+                <FilePathHeader
+                  path={relativePath() || (kind() === "read" ? "Reading file" : props.name === "write" ? "Writing file" : "Editing file")}
+                  openable={Boolean(absolutePath())}
+                  onOpen={() => {
+                    const target = absolutePath();
+                    if (target) props.onOpen?.(target);
+                  }}
+                />
+              </Match>
+            </Switch>
+          </span>
           <Show when={kind() === "read" && lineRange(props.input)}>
             <span class="tool-sub-text">{lineRange(props.input)}</span>
           </Show>

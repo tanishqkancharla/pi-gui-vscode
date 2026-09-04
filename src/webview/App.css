@@ -509,9 +509,14 @@ body {
 
 .tool-header {
   display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-md);
+  align-items: center;
+  gap: var(--spacing-sm);
   padding: var(--spacing-xs);
+  min-height: 28px;
+}
+
+.tool-header:has(.tool-text--bash) {
+  align-items: flex-start;
 }
 
 .tool-icon {
@@ -521,6 +526,11 @@ body {
   height: 20px;
   width: 20px;
   flex-shrink: 0;
+  line-height: 0;
+}
+
+.tool-icon svg {
+  display: block;
 }
 
 .tool-icon__chevron {
@@ -534,12 +544,23 @@ body {
 
 .tool-header-text {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--spacing-sm);
   flex: 1;
   overflow: hidden;
   min-width: 0;
+}
+
+.tool-header:has(.tool-text--bash) .tool-header-text {
+  align-items: flex-start;
+}
+
+.tool-header-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .tool-text {
@@ -557,15 +578,19 @@ button.tool-file-path {
   padding: 0;
   margin: 0;
   font: inherit;
+  line-height: 20px;
   color: inherit;
   cursor: pointer;
   text-align: left;
   max-width: 100%;
+  min-height: 20px;
+  height: 20px;
 }
 
 .tool-text--bash {
   font-family: var(--editor-font-family);
   font-size: var(--font-size-small);
+  line-height: 20px;
   white-space: pre-wrap;
   display: -webkit-box;
   -webkit-line-clamp: 5;
@@ -576,6 +601,9 @@ button.tool-file-path {
 
 .tool-file-path {
   display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
   overflow: hidden;
 }
 
@@ -604,8 +632,9 @@ button.tool-file-path {
   gap: var(--spacing-xs);
   font-size: var(--font-size-small);
   font-weight: 500;
+  line-height: 20px;
+  height: 20px;
   flex-shrink: 0;
-  margin-left: auto;
 }
 
 .tool-diff-stats__additions {
@@ -617,8 +646,12 @@ button.tool-file-path {
 }
 
 .tool-sub-text {
+  display: flex;
+  align-items: center;
   font-size: 11px;
   font-weight: 400;
+  line-height: 20px;
+  height: 20px;
   color: color-mix(in oklab, var(--foreground) 50%, transparent);
   flex-shrink: 0;
 }
