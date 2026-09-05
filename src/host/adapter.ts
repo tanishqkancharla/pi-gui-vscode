@@ -9,6 +9,7 @@ import {
 import type {
   AssistantMessageEvent,
   AssistantMessage,
+  Api,
   Message,
   Model,
   ToolCall,
@@ -32,6 +33,7 @@ import {
 } from "@earendil-works/pi-server";
 import { sortSessionsNewestFirst } from "../shared/sessions";
 import type {
+  JsonValue,
   ModelMetadata,
   ModelRef,
   SessionMetadata,
@@ -41,6 +43,10 @@ import type {
   TranscriptItem,
   TranscriptProgress,
 } from "@earendil-works/pi-protocol";
+
+type AssistantItem = Extract<TranscriptItem, { role: "assistant" }>;
+type UserItem = Extract<TranscriptItem, { role: "user" }>;
+type AssistantContent = AssistantItem["content"][number];
 
 function sessionDirFor(cwd: string, agentDir: string): string {
   const resolvedCwd = resolve(cwd);
@@ -52,7 +58,7 @@ function messageId(sessionId: string, index: number, role: string, timestamp: nu
   return `${sessionId}:${index}:${role}:${timestamp}`;
 }
 
-function queuedUserItem(sessionId: string, text: string, index: number): TranscriptItem {
+function queuedUserItem(sessionId: string, text: string, index: number): UserItem {
   return {
     id: `${sessionId}:steer:${index}`,
     role: "user",
@@ -65,33 +71,36 @@ function toStreamingAssistantItem(
   sessionId: string,
   sessionMessages: readonly Message[],
   message: AssistantMessage,
-): TranscriptItem {
+): AssistantItem {
   const list = sessionMessages.includes(message) ? [...sessionMessages] : [...sessionMessages, message];
   const index = list.indexOf(message);
   const id = messageId(sessionId, index, "assistant", message.timestamp);
   try {
     return toProtocolAssistantMessage(message, { id });
   } catch {
-    const item: TranscriptItem = {
+    const content: AssistantContent[] = [];
+    message.content.forEach((part, partIndex) => {
+      if (part.type === "text") {
+        content.push({ type: "text", text: part.text ?? "" });
+        return;
+      }
+      if (part.type === "thinking") {
+        content.push({ type: "thinking", thinking: part.thinking ?? "" });
+        return;
+      }
+      if (part.type === "toolCall") {
+        content.push({
+          type: "toolCall",
+          toolCallId: part.id || `pending:${partIndex}`,
+          toolName: part.name?.trim() ?? "",
+          input: (part.arguments ?? {}) as JsonValue,
+        });
+      }
+    });
+    return {
       id,
       role: "assistant",
-      content: message.content.flatMap((part, partIndex) => {
-        if (part.type === "text") return [{ type: "text" as const, text: part.text ?? "" }];
-        if (part.type === "thinking") {
-          return [{ type: "thinking" as const, thinking: part.thinking ?? "" }];
-        }
-        if (part.type === "toolCall") {
-          return [
-            {
-              type: "toolCall" as const,
-              toolCallId: part.id || `pending:${partIndex}`,
-              toolName: part.name?.trim() ?? "",
-              input: part.arguments ?? {},
-            },
-          ];
-        }
-        return [];
-      }),
+      content,
       model: {
         provider: message.provider || "none",
         id: message.model || "none",
@@ -99,7 +108,6 @@ function toStreamingAssistantItem(
       timestamp: Number.isSafeInteger(message.timestamp) ? message.timestamp : Date.now(),
       status: "streaming",
     };
-    return item;
   }
 }
 
@@ -315,7 +323,13 @@ class AgentSessionRuntime implements PiSessionRuntime {
         event.message as AssistantMessage,
       );
       this.streamingMessageId = item.id;
-      this.emit({ type: "progress", progress: { type: "item_finished", item } });
+      this.emit({
+        type: "progress",
+        progress: { type: "item_finished", item } as Extract<
+          TranscriptProgress,
+          { type: "item_finished" }
+        >,
+      });
     }
     if (
       event.type === "message_end" ||
@@ -329,9 +343,9 @@ class AgentSessionRuntime implements PiSessionRuntime {
     }
   }
 
-  private latestAssistantItem(): TranscriptItem | undefined {
+  private latestAssistantItem(): AssistantItem | undefined {
     const items = toTranscript(this.protocolId, this.session.messages as Message[]);
-    return [...items].reverse().find((item) => item.role === "assistant");
+    return [...items].reverse().find((item): item is AssistantItem => item.role === "assistant");
   }
 
   private buildSnapshot(): SessionSnapshot {
@@ -357,7 +371,7 @@ class AgentSessionRuntime implements PiSessionRuntime {
     };
   }
 
-  private readQueuedSteer(): TranscriptItem[] {
+  private readQueuedSteer(): UserItem[] {
     return this.session
       .getSteeringMessages()
       .map((text, index) => queuedUserItem(this.protocolId, text, index));
@@ -409,7 +423,7 @@ export class CodingAgentServerService implements PiServerService {
     const available = await this.modelRuntime.getAvailable();
     const availableIds = new Set(available.map((model) => `${model.provider}/${model.id}`));
     return this.modelRuntime.getModels().map((model) =>
-      toProtocolModelMetadata(model as Model, availableIds.has(`${model.provider}/${model.id}`)),
+      toProtocolModelMetadata(model, availableIds.has(`${model.provider}/${model.id}`)),
     );
   }
 
@@ -441,7 +455,7 @@ export class CodingAgentServerService implements PiServerService {
     sessionManager: SessionManager,
     options?: CreateSessionOptions,
   ): Promise<PiSessionRuntime> {
-    let model: Model | undefined;
+    let model: Model<Api> | undefined;
     if (options?.model) {
       model = this.modelRuntime.getModel(options.model.provider, options.model.id);
     }

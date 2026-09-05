@@ -11,7 +11,7 @@ flowchart TD
     Start --> Adapter[CodingAgentServerService]
     Adapter --> Agent[createAgentSession]
     Start --> Connect
-    Connect --> Remote[RemoteSession]
+    Connect --> Remote[PiSessionHandle]
     Remote --> Relay[PiViewProvider postMessage]
     Relay --> UI[SolidJS webview renderer]
     UI -->|prompt steer abort create open setModel setThinking| Relay
@@ -22,14 +22,14 @@ sequenceDiagram
     participant User
     participant UI as Webview
     participant Host as PiViewProvider
-    participant Remote as RemoteSession
+    participant Remote as PiSessionHandle
     participant Srv as PiServer
     User->>UI: Submit prompt
     UI->>Host: command prompt
-    Host->>Remote: submit text
+    Host->>Remote: prompt or steer
     Remote->>Srv: prompt
     Srv-->>Remote: session_progress assistant_delta
-    Remote-->>Host: RemoteSessionState
+    Remote-->>Host: SessionSnapshot
     Host-->>UI: session-progress
     UI-->>User: Streaming tokens
     Srv-->>Remote: session_snapshot
@@ -49,7 +49,7 @@ flowchart TD
 
 ## Problem overview
 
-People who like OpenCode GUI’s sidebar want the same chrome for Pi, but that extension is a messy OpenCode SDK client living in the webview behind an HTTP/SSE proxy. Pi already has an experimental server protocol, a dumb `PiClient`, and `RemoteSession` transcript helpers. This repo should be a VS Code shell around that path, not a fork of OpenCode’s store.
+People who like OpenCode GUI’s sidebar want the same chrome for Pi, but that extension is a messy OpenCode SDK client living in the webview behind an HTTP/SSE proxy. Pi 0.84 shipped an experimental server protocol, a dumb `PiClient`, and session handles. This repo is a VS Code shell around that path, not a fork of OpenCode’s store. The bundled coding-agent SDK tracks latest (0.85.1). Pi 0.85 replaced the session protocol with Chord envelopes and unpublished `@earendil-works/pi-coding-agent/client`, so the host keeps `pi-client` / `pi-server` / `pi-protocol` at 0.84.4 and uses `PiSessionHandle` instead of `RemoteSession`.
 
 ## Solution overview
 
@@ -81,7 +81,7 @@ Ship a VS Code activity-bar sidebar that clones OpenCode GUI’s layout (session
 - [pi-client README](https://github.com/earendil-works/pi/blob/main/packages/client/README.md) — `PiClient` + `@earendil-works/pi-client/unix`.
 - [pi-server README](https://github.com/earendil-works/pi/blob/main/packages/server/README.md) — `createUnixServer(service, { path })`; apps supply `PiServerService`.
 - [pi-coding-agent SDK](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/sdk.md) — `createAgentSession`, `SessionManager.list`, `ModelRuntime`.
-- [`@earendil-works/pi-coding-agent/client`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/client/remote-session.ts) — `RemoteSession`, `applyTranscriptSnapshot`, `applyTranscriptProgress`.
+- [`@earendil-works/pi-client`](https://github.com/earendil-works/pi/blob/v0.84.4/packages/client/README.md) — `PiClient` + `PiSessionHandle` (`createSession` / `acquireSession`). Transcript reducers live in `src/shared/transcript.ts`.
 - [`src/shared/messages.ts`](../src/shared/messages.ts) — Host↔webview contract (this repo).
 - [`src/host/runtime.ts`](../src/host/runtime.ts) — Discovery and bundled server lifecycle.
 - [`src/host/adapter.ts`](../src/host/adapter.ts) — `CodingAgentServerService`.
@@ -198,7 +198,7 @@ On activate, discover a Unix socket, start a bundled server only if needed, and 
 
 ### Phase 4: Sessions list, create, and switch
 
-Bind `RemoteSession` to the webview session switcher. Persist the last session id per workspace.
+Bind `PiSessionHandle` to the webview session switcher. Persist the last session id per workspace.
 
 ```callstack
  App TopBar
@@ -206,19 +206,19 @@ Bind `RemoteSession` to the webview session switcher. Persist the last session i
 +└── host server-snapshot.sessions
 +    └── onNewSession -> command new-session
 +    └── onSelect -> command open-session
-+        └── RemoteSession.create / open
++        └── client.createSession / acquireSession
 +            └── session-snapshot
 ```
 
 ```diff:src/PiViewProvider.ts
 +private async handleNewSession() {
 +  await this.remote?.dispose();
-+  this.remote = await RemoteSession.create(this.client, { cwd: this.cwd });
++  this.remote = await this.client.createSession({ cwd: this.cwd });
 +  this.bindRemote(this.remote);
 +}
 ```
 
-- [ ] On connect, `RemoteSession` from `@earendil-works/pi-coding-agent/client` is created or opened (last id in `workspaceState`, else new).
+- [ ] On connect, `PiSessionHandle` from `PiClient.createSession` / `acquireSession` is created or opened (last id in `workspaceState`, else new).
 - [ ] Forward `client.snapshot.sessions` / `models` as `server-snapshot`. Subscribe to session snapshots and progress.
 - [ ] TopBar `SessionSwitcher` + `NewSessionButton` drive `open-session` / `new-session`. Empty transcript still shows the empty state until messages exist.
 - [ ] Add a test that `parseWebviewMessage` accepts `open-session` / `new-session`.
@@ -232,7 +232,9 @@ Submitting the composer streams tokens into the message list. A later snapshot r
  InputBar onSubmit
 -└── noop
 +└── postMessage prompt
-+    └── RemoteSession.submit
++    └── submitToSession
++        ├── idle -> prompt
++        └── turn -> steer
 +        ├── onEvent session_progress -> MessageList streaming text
 +        └── subscribe snapshot -> selectTranscript replace
 ```
@@ -247,7 +249,7 @@ Submitting the composer streams tokens into the message list. A later snapshot r
 +};
 ```
 
-- [ ] Host maps `prompt` / `steer` to `RemoteSession.submit` (it already chooses prompt vs steer from phase).
+- [ ] Host maps `prompt` / `steer` to `submitToSession` (prompt when idle, steer during a turn).
 - [ ] Webview keeps `TranscriptState` via `createTranscriptState` / `applyTranscriptProgress` / `applyTranscriptSnapshot` (copy the helpers into `src/webview/transcript.ts` if the webview cannot import the Node package).
 - [ ] `MessageList` renders user text, assistant markdown, and thinking blocks. Streaming assistant items use `status: "streaming"`.
 - [ ] Cover `applyTranscriptProgress` for an `assistant_delta` in `src/webview/transcript.test.ts` if helpers are vendored; otherwise skip and rely on the package.

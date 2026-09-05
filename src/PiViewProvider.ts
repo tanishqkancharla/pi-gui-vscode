@@ -1,11 +1,12 @@
 import * as vscode from "vscode";
-import { RemoteSession } from "@earendil-works/pi-coding-agent/client";
+import type { PiSessionHandle } from "@earendil-works/pi-client";
 import {
   parseWebviewMessage,
   type HostMessage,
   type WebviewMessage,
 } from "./shared/messages";
 import { createPiRuntime, type PiRuntime } from "./host/runtime";
+import { isLiveSession, submitToSession } from "./host/session";
 import { overlayCurrentSession, shouldOpenSession, sortSessionsNewestFirst } from "./shared/sessions";
 
 const LAST_SESSION_KEY = "piGui.lastSessionId";
@@ -15,7 +16,7 @@ export class PiViewProvider implements vscode.WebviewViewProvider {
 
   private view?: vscode.WebviewView;
   private runtime?: PiRuntime;
-  private remote?: RemoteSession;
+  private remote?: PiSessionHandle;
   private ready = false;
   private readonly pending: HostMessage[] = [];
   private unsubClient?: () => void;
@@ -78,11 +79,11 @@ export class PiViewProvider implements vscode.WebviewViewProvider {
         break;
       case "prompt":
         await this.ensureRemote();
-        await this.remote?.submit(message.text);
+        if (this.remote) await submitToSession(this.remote, message.text);
         break;
       case "steer":
         await this.ensureRemote();
-        await this.remote?.submit(message.text);
+        if (this.remote) await submitToSession(this.remote, message.text);
         break;
       case "abort":
         await this.remote?.abort();
@@ -169,16 +170,16 @@ export class PiViewProvider implements vscode.WebviewViewProvider {
   private async createSession(): Promise<void> {
     const client = (await this.ensureRuntime()).client;
     const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? process.cwd();
-    await this.bindRemote(await RemoteSession.create(client, { cwd }));
+    await this.bindRemote(await client.createSession({ cwd }));
   }
 
   private async openSession(sessionId: string): Promise<void> {
     if (!shouldOpenSession(this.remote?.id, sessionId)) return;
     const client = (await this.ensureRuntime()).client;
-    await this.bindRemote(await RemoteSession.open(client, sessionId));
+    await this.bindRemote(await client.acquireSession(sessionId, { mode: "exclusive" }));
   }
 
-  private async bindRemote(remote: RemoteSession): Promise<void> {
+  private async bindRemote(remote: PiSessionHandle): Promise<void> {
     this.unsubRemote?.();
     this.unsubEvents?.();
     await this.remote?.dispose();
@@ -187,19 +188,23 @@ export class PiViewProvider implements vscode.WebviewViewProvider {
     if (remote.id) {
       await this.context.workspaceState.update(LAST_SESSION_KEY, remote.id);
     }
-    this.unsubRemote = remote.subscribe((state) => {
-      if (!state.snapshot) return;
-      const key = `${state.snapshot.id}:${state.snapshot.revision}`;
+    this.unsubRemote = remote.subscribe((snapshot) => {
+      const key = `${snapshot.id}:${snapshot.revision}`;
       if (this.lastPostedSnapshotKey === key) return;
       this.lastPostedSnapshotKey = key;
-      this.post({ type: "session-snapshot", snapshot: state.snapshot });
+      this.post({ type: "session-snapshot", snapshot });
       this.pushServerSnapshot();
     });
     this.unsubEvents = this.attachProgress(remote);
+    if (remote.snapshot) {
+      const snapshot = remote.snapshot;
+      this.lastPostedSnapshotKey = `${snapshot.id}:${snapshot.revision}`;
+      this.post({ type: "session-snapshot", snapshot });
+    }
     this.pushServerSnapshot();
   }
 
-  private attachProgress(remote: RemoteSession): () => void {
+  private attachProgress(remote: PiSessionHandle): () => void {
     const client = this.runtime?.client;
     if (!client) return () => {};
     return client.onEvent((event) => {
@@ -210,7 +215,7 @@ export class PiViewProvider implements vscode.WebviewViewProvider {
   }
 
   private async ensureRemote(): Promise<void> {
-    if (!this.remote || this.remote.disposed) {
+    if (!isLiveSession(this.remote)) {
       await this.restoreOrCreateSession();
     }
   }

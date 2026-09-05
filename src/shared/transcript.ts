@@ -1,4 +1,5 @@
 import type {
+  JsonValue,
   SessionSnapshot,
   TranscriptItem,
   TranscriptProgress,
@@ -11,7 +12,7 @@ export interface TranscriptState {
   readonly toolCallBuffers: ReadonlyMap<string, string>;
 }
 
-function isJsonValue(value: unknown): boolean {
+function isJsonValue(value: unknown): value is JsonValue {
   if (value === null || typeof value === "boolean" || typeof value === "string") {
     return true;
   }
@@ -23,7 +24,7 @@ function isJsonValue(value: unknown): boolean {
   return Object.values(value as Record<string, unknown>).every(isJsonValue);
 }
 
-function parsePartialToolInput(value: string): unknown {
+function parsePartialToolInput(value: string): JsonValue {
   try {
     const parsed = JSON.parse(value) as unknown;
     if (isJsonValue(parsed)) return parsed;

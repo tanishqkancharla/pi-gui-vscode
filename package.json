@@ -83,9 +83,9 @@
     "package": "node scripts/package-vsix.mjs"
   },
   "dependencies": {
-    "@earendil-works/pi-ai": "^0.84.4",
+    "@earendil-works/pi-ai": "^0.85.1",
     "@earendil-works/pi-client": "^0.84.4",
-    "@earendil-works/pi-coding-agent": "^0.84.4",
+    "@earendil-works/pi-coding-agent": "^0.85.1",
     "@earendil-works/pi-protocol": "^0.84.4",
     "@earendil-works/pi-server": "^0.84.4",
     "marked": "^15.0.12",

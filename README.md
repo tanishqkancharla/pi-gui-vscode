@@ -1,6 +1,6 @@
 # Pi GUI
 
-A VS Code sidebar for [Pi](https://github.com/earendil-works/pi). The chrome matches [OpenCode GUI](https://github.com/saffron-health/opencode-gui) (activity-bar view, session switcher, transcript with tool cards, composer). The webview is a renderer; the extension host is a `PiClient`.
+The extension host is a `PiClient` talking to a Unix `PiServer` (the 0.84 session protocol). The bundled agent is `@earendil-works/pi-coding-agent` 0.85.1. Pi 0.85 rewrote `pi-client` / `pi-server` / `pi-protocol` into Chord envelopes and unpublished `RemoteSession`, so this sidebar keeps the 0.84 session wire and uses `PiSessionHandle` (`createSession` / `acquireSession`) instead.
 
 Installing the extension is enough. It bundles `@earendil-works/pi-coding-agent`, `pi-server`, and `pi-client`, and starts a local Unix `PiServer` when nothing is already listening. No `pi` binary, global npm install, or separate CLI is required.
 
